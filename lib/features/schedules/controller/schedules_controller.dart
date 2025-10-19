@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:apc_schedular/constants/api.dart';
 import 'package:apc_schedular/constants/http_service.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
+import 'package:apc_schedular/features/schedules/model/reoccuring_activities_model.dart';
 import 'package:apc_schedular/features/schedules/model/schedule_detail_model.dart';
 import 'package:get/get.dart';
 
@@ -12,12 +14,15 @@ class SchedulesController extends GetxController {
   var loadedCats = CategoryModel().obs;
   var loadedActivities = AllScheduleModel().obs;
   var loadedDetails = ScheduleDetailModel().obs;
+  var reoccuringModel = ReoccuringActivitiesModel().obs;
+  var loadedReoccuringActivities = RxBool(false);
 
   RxBool creatingActivity = RxBool(false);
   RxBool createActivityInstance = RxBool(false);
   RxBool loadingAllActivities = RxBool(false);
   RxBool getting = RxBool(false);
   RxBool loadProfile = RxBool(false);
+  RxBool loadingReoccuring = RxBool(false);
 
   //REPOSITORIES
   Future getCategoryRepo() async {
@@ -64,10 +69,18 @@ class SchedulesController extends GetxController {
     return jsonEncode(response);
   }
 
+  Future getAllReocccuringActivitiesRepo() async {
+    final response = await BaseHttpClient.instance.get(
+      ApiRoutes.getUserActivity,
+    );
+    return jsonEncode(response);
+  }
+
   //CONTROLLERS
   @override
   onInit() async {
     getCatController();
+    getReoccuringActivitiesController();
     super.onInit();
   }
 
@@ -79,6 +92,17 @@ class SchedulesController extends GetxController {
       loadedCats.value = categoryModelFromJson(result);
     } catch (e) {
       loadingCats(false);
+    }
+  }
+
+  Future getReoccuringActivitiesController() async {
+    try {
+      loadingReoccuring(true);
+      var result = await getAllReocccuringActivitiesRepo();
+      loadingReoccuring(false);
+      reoccuringModel.value = reoccuringActivitiesModelFromJson(result);
+    } catch (e) {
+      loadingReoccuring(false);
     }
   }
 
@@ -112,13 +136,14 @@ class SchedulesController extends GetxController {
       createActivityInstance(false);
       rethrow;
     }
-  }
+  } 
 
   Future getAllUserActivitiesController() async {
     try {
       loadingAllActivities(true);
       var result = await getAllUserActivitiesRepo();
       loadingAllActivities(false);
+      log(result);
       loadedActivities.value = allScheduleModelFromJson(result);
     } catch (e) {
       loadingAllActivities(false);

@@ -22,7 +22,9 @@ class AllScheduleModel {
         success: json["success"],
         data: json["data"] == null
             ? []
-            : List<ScheduleDatum>.from(json["data"]!.map((x) => ScheduleDatum.fromJson(x))),
+            : List<ScheduleDatum>.from(
+                json["data"]!.map((x) => ScheduleDatum.fromJson(x)),
+              ),
         pagination: json["pagination"] == null
             ? null
             : Pagination.fromJson(json["pagination"]),
@@ -114,45 +116,24 @@ class CategoryId {
 }
 
 class CreatedBy {
-  Id? id;
-  Username? username;
-  Email? email;
+  String? id;
+  String? username;
+  String? email;
 
   CreatedBy({this.id, this.username, this.email});
 
   factory CreatedBy.fromJson(Map<String, dynamic> json) => CreatedBy(
-    id: idValues.map[json["_id"]]!,
-    username: usernameValues.map[json["username"]]!,
-    email: emailValues.map[json["email"]]!,
+    id: json["_id"],
+    username: json["username"],
+    email: json["email"],
   );
 
   Map<String, dynamic> toJson() => {
-    "_id": idValues.reverse[id],
-    "username": usernameValues.reverse[username],
-    "email": emailValues.reverse[email],
+    "_id": id,
+    "username": username,
+    "email": email,
   };
 }
-
-enum Email { ITSIRPRAISE_GMAIL_COM, TEST_EXAMPLE_COM }
-
-final emailValues = EnumValues({
-  "itsirpraise@gmail.com": Email.ITSIRPRAISE_GMAIL_COM,
-  "test@example.com": Email.TEST_EXAMPLE_COM,
-});
-
-enum Id { THE_68_BE62_A082684_BFEA9_E54_BA9, THE_68_C5_D678_C78_E4303151566_C1 }
-
-final idValues = EnumValues({
-  "68be62a082684bfea9e54ba9": Id.THE_68_BE62_A082684_BFEA9_E54_BA9,
-  "68c5d678c78e4303151566c1": Id.THE_68_C5_D678_C78_E4303151566_C1,
-});
-
-enum Username { GANDALF, TESTUSER }
-
-final usernameValues = EnumValues({
-  "Gandalf": Username.GANDALF,
-  "testuser": Username.TESTUSER,
-});
 
 class Pagination {
   int? page;
