@@ -1,6 +1,7 @@
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/notifications/alarm_manager.dart';
+import 'package:apc_schedular/features/profile/controller/profile_controller.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -22,6 +23,7 @@ class ScheduleDetailScreen extends StatefulWidget {
 }
 
 final _scheduleController = Get.put(SchedulesController());
+final _profileCotroller = Get.put(ProfileController());
 
 class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
   final Set<ReminderOption> selectedReminders = {};
@@ -34,6 +36,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     _scheduleController.getActivityDetailController(widget.id);
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,25 +47,55 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         title: Text(widget.title),
       ),
       body: Obx(() {
-        if (_scheduleController.getting.value) {
+        if (_scheduleController.getting.value ||
+            _profileCotroller.loadedProfile.value.data?.user?.id == null) {
           return Center(
             child: CircularProgressIndicator(color: AppColors.blue),
           );
         }
 
+        final userId = _profileCotroller.loadedProfile.value.data?.user?.id;
         final data = _scheduleController.loadedDetails.value.data;
+
         if (data == null || data.isEmpty) {
           return const Center(child: Text('Error fetching details'));
         }
 
         final detail = data.first;
 
-        // ✅ Parse times - API sends times with Z but they're already in local time
+        // Check if current user is the creator
+        // Handle both object and string cases for created_by
+        String? creatorId;
+        if (detail.createdBy is Map || detail.createdBy is Object) {
+          // If created_by is an object, get the _id field
+          creatorId = detail.createdBy?.id ?? detail.createdBy?.id;
+        } else if (detail.createdBy is String) {
+          // If created_by is a string, use it directly
+          creatorId = detail.createdBy as String;
+        }
+
+        // Also check activity's created_by
+        String? activityCreatorId;
+        if (detail.activityId?.createdBy is Map ||
+            detail.activityId?.createdBy is Object) {
+          activityCreatorId =
+              detail.activityId?.createdBy ?? detail.activityId?.createdBy;
+        } else if (detail.activityId?.createdBy is String) {
+          activityCreatorId = detail.activityId?.createdBy as String;
+        }
+
+        final isCreator = creatorId == userId || activityCreatorId == userId;
+
+        print('🔍 Creator Check:');
+        print('   Current User ID: $userId');
+        print('   Activity Instance Creator ID: $creatorId');
+        print('   Activity Creator ID: $activityCreatorId');
+        print('   Is Creator: $isCreator');
+
         DateTime? startTime;
         DateTime? endTime;
 
         if (detail.startTime is String) {
-          // Parse the string but treat it as local time (ignore the Z)
           final timeStr = (detail.startTime as String).replaceAll('Z', '');
           startTime = DateTime.parse(timeStr);
           print('🕐 Start time from API: ${detail.startTime}');
@@ -71,7 +105,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         }
 
         if (detail.endTime is String) {
-          // Parse the string but treat it as local time (ignore the Z)
           final timeStr = (detail.endTime as String).replaceAll('Z', '');
           endTime = DateTime.parse(timeStr);
           print('🕐 End time from API: ${detail.endTime}');
@@ -80,7 +113,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
           endTime = detail.endTime as DateTime;
         }
 
-        // Get current time
         final nowTz = tz.TZDateTime.now(tz.local);
         final now = DateTime(
           nowTz.year,
@@ -95,7 +127,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         final bool isPast = endTime != null && endTime.isBefore(now);
         final bool isFutureStart = startTime != null && startTime.isAfter(now);
 
-        // Helper for formatted display
         String formatDateTime(DateTime? dt) {
           if (dt == null) return '';
 
@@ -111,7 +142,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Schedule Card
                 Opacity(
                   opacity: isPast ? 0.5 : 1.0,
                   child: Card(
@@ -137,6 +167,38 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
+
+                              // Edit button (only if creator)
+                              if (isCreator) ...[
+                                IconButton(
+                                  tooltip: 'Edit schedule',
+                                  icon: Icon(Icons.edit),
+                                  color: AppColors.blue,
+                                  onPressed: () => _showEditBottomSheet(
+                                    context,
+
+                                    detail,
+                                    detail.id ?? '',
+                                    startTime,
+                                    endTime,
+                                  ),
+                                ),
+                              ],
+
+                              // Delete button (only if creator)
+                              if (isCreator) ...[
+                                IconButton(
+                                  tooltip: 'Delete schedule',
+                                  icon: Icon(Icons.delete),
+                                  color: Colors.red,
+                                  onPressed: () => _showDeleteConfirmation(
+                                    context,
+                                    detail.id,
+                                  ),
+                                ),
+                              ],
+
+                              // Reminder button
                               Opacity(
                                 opacity: isFutureStart ? 1.0 : 0.5,
                                 child: IconButton(
@@ -175,7 +237,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           ),
                           const SizedBox(height: 10),
 
-                          // Display WAT times
                           Text(
                             'Start time: ${formatDateTime(startTime)}',
                             style: AppTextStyle().textInter(
@@ -192,27 +253,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                             ),
                           ),
 
-                          // Show time until event
                           if (isFutureStart && startTime != null) ...[
                             const SizedBox(height: 8),
-                            // Container(
-                            //   padding: const EdgeInsets.symmetric(
-                            //     horizontal: 12,
-                            //     vertical: 6,
-                            //   ),
-                            //   decoration: BoxDecoration(
-                            //     color: AppColors.blue.withOpacity(0.1),
-                            //     borderRadius: BorderRadius.circular(20),
-                            //   ),
-                            //   child: Text(
-                            //     _getTimeUntil(startTime),
-                            //     style: AppTextStyle().textInter(
-                            //       size: 13,
-                            //       weight: FontWeight.w500,
-                            //       color: AppColors.blue,
-                            //     ),
-                            //   ),
-                            // ),
                           ],
 
                           const SizedBox(height: 10),
@@ -278,14 +320,12 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Reminder options
                           ...ReminderOption.values.map((option) {
                             final reminderTime = _calculateReminderTime(
                               startTime!,
                               option,
                             );
 
-                            // Get current time properly
                             final nowTz = tz.TZDateTime.now(tz.local);
                             final currentTime = DateTime(
                               nowTz.year,
@@ -344,7 +384,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Save button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
@@ -411,7 +450,301 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     );
   }
 
-  // Calculate reminder time
+  void _showEditBottomSheet(
+    BuildContext context,
+    dynamic detail,
+    String id,
+    DateTime? currentStartTime,
+    DateTime? currentEndTime,
+  ) {
+    DateTime selectedStartDate = currentStartTime ?? DateTime.now();
+    TimeOfDay selectedStartTime = TimeOfDay.fromDateTime(selectedStartDate);
+    DateTime selectedEndDate = currentEndTime ?? DateTime.now();
+    TimeOfDay selectedEndTime = TimeOfDay.fromDateTime(selectedEndDate);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.edit, color: AppColors.blue),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Edit Schedule',
+                        style: AppTextStyle().textInter(
+                          size: 20,
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Start Date
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.calendar_today, color: AppColors.blue),
+                    title: Text('Start Date'),
+                    subtitle: Text(
+                      DateFormat('d MMM, yyyy').format(selectedStartDate),
+                    ),
+                    onTap: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedStartDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedStartDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            selectedStartDate.hour,
+                            selectedStartDate.minute,
+                          );
+                        });
+                      }
+                    },
+                  ),
+
+                  // Start Time
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.access_time, color: AppColors.blue),
+                    title: Text('Start Time'),
+                    subtitle: Text(selectedStartTime.format(context)),
+                    onTap: () async {
+                      final TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedStartTime,
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedStartTime = picked;
+                          selectedStartDate = DateTime(
+                            selectedStartDate.year,
+                            selectedStartDate.month,
+                            selectedStartDate.day,
+                            picked.hour,
+                            picked.minute,
+                          );
+                        });
+                      }
+                    },
+                  ),
+
+                  Divider(),
+
+                  // End Date
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.calendar_today, color: Colors.red),
+                    title: Text('End Date'),
+                    subtitle: Text(
+                      DateFormat('d MMM, yyyy').format(selectedEndDate),
+                    ),
+                    onTap: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedEndDate,
+                        firstDate: selectedStartDate,
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedEndDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            selectedEndDate.hour,
+                            selectedEndDate.minute,
+                          );
+                        });
+                      }
+                    },
+                  ),
+
+                  // End Time
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.access_time, color: Colors.red),
+                    title: Text('End Time'),
+                    subtitle: Text(selectedEndTime.format(context)),
+                    onTap: () async {
+                      final TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedEndTime,
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedEndTime = picked;
+                          selectedEndDate = DateTime(
+                            selectedEndDate.year,
+                            selectedEndDate.month,
+                            selectedEndDate.day,
+                            picked.hour,
+                            picked.minute,
+                          );
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Save Button
+                  Obx(
+                    () => SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                            _scheduleController.editingActivityInstance.value
+                            ? null
+                            : () async {
+                                if (selectedEndDate.isBefore(
+                                  selectedStartDate,
+                                )) {
+                                  Get.snackbar(
+                                    'Invalid Time',
+                                    'End time must be after start time',
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                    snackPosition: SnackPosition.BOTTOM,
+                                  );
+                                  return;
+                                }
+
+                                await _scheduleController
+                                    .editingActivityInstanceController(
+                                      // detail.activityId?.id ?? widget.id,
+                                      id,
+                                      selectedStartDate.toIso8601String(),
+                                      selectedEndDate.toIso8601String(),
+                                    );
+
+                                Navigator.pop(context);
+                                _scheduleController.getActivityDetailController(
+                                  widget.id,
+                                );
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: _scheduleController.editingActivityInstance.value
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'Update Schedule',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, dynamic detail) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red),
+              const SizedBox(width: 8),
+              Text('Delete Schedule'),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete ,this schedule? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            Obx(
+              () => ElevatedButton(
+                onPressed: _scheduleController.deletingActivity.value
+                    ? null
+                    : () async {
+                        await _scheduleController
+                            .deleteActivityInstanceController(detail);
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context); // Go back to previous screen
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: _scheduleController.deletingActivity.value
+                    ? SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text('Delete'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   DateTime? _calculateReminderTime(DateTime startTime, ReminderOption option) {
     switch (option) {
       case ReminderOption.fiveMinutes:
@@ -426,35 +759,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         return startTime.subtract(const Duration(days: 1));
     }
   }
-
-  // Get human-readable time until event
-  // String _getTimeUntil(DateTime eventTime) {
-  //   final nowTz = tz.TZDateTime.now(tz.local);
-  //   final now = DateTime(
-  //     nowTz.year,
-  //     nowTz.month,
-  //     nowTz.day,
-  //     nowTz.hour,
-  //     nowTz.minute,
-  //     nowTz.second,
-  //   );
-  //   final difference = eventTime.difference(now);
-
-  //   if (difference.isNegative) return 'Event passed';
-
-  //   if (difference.inDays > 0) {
-  //     final days = difference.inDays;
-  //     return 'Starts in $days ${days == 1 ? 'day' : 'days'}';
-  //   } else if (difference.inHours > 0) {
-  //     final hours = difference.inHours;
-  //     return 'Starts in $hours ${hours == 1 ? 'hour' : 'hours'}';
-  //   } else if (difference.inMinutes > 0) {
-  //     final minutes = difference.inMinutes;
-  //     return 'Starts in $minutes ${minutes == 1 ? 'minute' : 'minutes'}';
-  //   } else {
-  //     return 'Starting soon!';
-  //   }
-  // }
 
   Future<void> _saveReminders(String title, DateTime startTime) async {
     if (selectedReminders.isEmpty) {
@@ -473,7 +777,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     });
 
     try {
-      // Ensure timezone is initialized (should be done in main.dart)
       try {
         tz.TZDateTime.now(tz.local);
         print('✅ Timezone already initialized');
@@ -488,10 +791,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         }
       }
 
-      // Initialize AlarmManager
       await AlarmManager.initialize();
 
-      // Request permissions
       final hasPermissions = await AlarmManager.requestAlarmPermissions();
       if (!hasPermissions) {
         Get.snackbar(
@@ -508,13 +809,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         return;
       }
 
-      // Cancel existing reminders for this schedule
       await AlarmManager.cancelRemindersForSchedule(widget.id);
 
       int reminderIndex = 0;
       int successCount = 0;
 
-      // Get current time
       final nowTz = tz.TZDateTime.now(tz.local);
       final now = DateTime(
         nowTz.year,
@@ -529,7 +828,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         final reminderTime = _calculateReminderTime(startTime, option);
 
         if (reminderTime != null && reminderTime.isAfter(now)) {
-          // Convert to TZDateTime properly - don't use .from() as it causes issues
           final tzReminderTime = tz.TZDateTime(
             tz.local,
             reminderTime.year,
@@ -616,7 +914,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
   }
 }
 
-// Enum for reminder options
 enum ReminderOption { fiveMinutes, tenMinutes, thirtyMinutes, oneHour, oneDay }
 
 extension ReminderOptionExtension on ReminderOption {

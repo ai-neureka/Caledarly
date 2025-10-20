@@ -1,5 +1,6 @@
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
+import 'package:apc_schedular/features/dashboard/reoccuring_schedule_screen.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
 import 'package:apc_schedular/features/schedules/presentation/create_schdeule_screen.dart';
@@ -38,11 +39,65 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
         backgroundColor: AppColors.blue,
         child: Icon(Icons.add, color: AppColors.whiteColor),
         onPressed: () {
-          Get.to(() => CreateSchdeuleScreen())?.then((_) {
-            _controller.getAllUserActivitiesController();
-          });
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            builder: (context) {
+              return Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 3,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Choose Type",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    ListTile(
+                      leading: const Icon(Icons.repeat, color: Colors.blue),
+                      title: const Text("Recurring"),
+                      onTap: () {
+                        Navigator.pop(context); // close the sheet
+                        Get.to(() => const ReoccuringScheduleScreen());
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.green,
+                      ),
+                      title: const Text("New"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Get.to(() => const CreateSchdeuleScreen())?.then((_) {
+                          _controller.getAllUserActivitiesController();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
         },
       ),
+
       backgroundColor: AppColors.whiteColor,
       appBar: AppBar(
         elevation: 0,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:apc_schedular/constants/api.dart';
+import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/http_service.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
@@ -15,7 +16,6 @@ class SchedulesController extends GetxController {
   var loadedActivities = AllScheduleModel().obs;
   var loadedDetails = ScheduleDetailModel().obs;
   var reoccuringModel = ReoccuringActivitiesModel().obs;
-  var loadedReoccuringActivities = RxBool(false);
 
   RxBool creatingActivity = RxBool(false);
   RxBool createActivityInstance = RxBool(false);
@@ -23,6 +23,8 @@ class SchedulesController extends GetxController {
   RxBool getting = RxBool(false);
   RxBool loadProfile = RxBool(false);
   RxBool loadingReoccuring = RxBool(false);
+  RxBool editingActivityInstance = RxBool(false);
+  RxBool deletingActivity = RxBool(false);
 
   //REPOSITORIES
   Future getCategoryRepo() async {
@@ -53,6 +55,25 @@ class SchedulesController extends GetxController {
         "start_time": startTime,
         "end_time": endTime,
       },
+    );
+    return response;
+  }
+
+  Future editActivityInstanceRepo(activityId, startTime, endTime) async {
+    final response = await BaseHttpClient.instance.put(
+      '${ApiRoutes.createActivityInstance}/$activityId',
+      body: {
+        "activity_id": activityId,
+        "start_time": startTime,
+        "end_time": endTime,
+      },
+    );
+    return response;
+  }
+
+  Future deleteActivityInstance(activityId) async {
+    final response = await BaseHttpClient.instance.delete(
+      '${ApiRoutes.deleteActivity}/$activityId',
     );
     return response;
   }
@@ -100,6 +121,7 @@ class SchedulesController extends GetxController {
       loadingReoccuring(true);
       var result = await getAllReocccuringActivitiesRepo();
       loadingReoccuring(false);
+      log(result);
       reoccuringModel.value = reoccuringActivitiesModelFromJson(result);
     } catch (e) {
       loadingReoccuring(false);
@@ -114,6 +136,13 @@ class SchedulesController extends GetxController {
       return result;
     } catch (e) {
       creatingActivity(false);
+      Get.snackbar(
+        'OPPSS',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.blue,
+        colorText: AppColors.whiteColor,
+      );
       rethrow;
     }
   }
@@ -136,7 +165,7 @@ class SchedulesController extends GetxController {
       createActivityInstance(false);
       rethrow;
     }
-  } 
+  }
 
   Future getAllUserActivitiesController() async {
     try {
@@ -159,6 +188,54 @@ class SchedulesController extends GetxController {
       loadedDetails.value = scheduleDetailModelFromJson(result);
     } catch (e) {
       getting(false);
+    }
+  }
+
+  Future editingActivityInstanceController(
+    activityId,
+    startTime,
+    endTime,
+  ) async {
+    try {
+      editingActivityInstance(true);
+      await editActivityInstanceRepo(activityId, startTime, endTime);
+      editingActivityInstance(false);
+      Get.snackbar(
+        'Success',
+        'Update succesful',
+        backgroundColor: AppColors.blue,
+        colorText: AppColors.blackColor,
+      );
+    } catch (e) {
+      editingActivityInstance(false);
+      Get.snackbar(
+        'Opps',
+        e.toString(),
+        backgroundColor: AppColors.redColor,
+        colorText: AppColors.whiteColor,
+      );
+    }
+  }
+
+  Future deleteActivityInstanceController(id) async {
+    try {
+      deletingActivity(true);
+      await deleteActivityInstance(id);
+      deletingActivity(false);
+      Get.snackbar(
+        'Success',
+        'succesful',
+        backgroundColor: AppColors.blue,
+        colorText: AppColors.blackColor,
+      );
+    } catch (e) {
+      deletingActivity(false);
+      Get.snackbar(
+        'Opps',
+        e.toString(),
+        backgroundColor: AppColors.redColor,
+        colorText: AppColors.blackColor,
+      );
     }
   }
 }

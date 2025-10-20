@@ -217,59 +217,68 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Expanded(
-                    child: GetX<SchedulesController>(
-                      builder: (controller) {
-                        if (controller.loadingAllActivities.value) {
-                          return Center(
-                            child: CircularProgressIndicator(
+                  GetX<SchedulesController>(
+                    builder: (controller) {
+                      if (controller.loadingAllActivities.value) {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.blackColor,
+                          ),
+                        );
+                      }
+                      if (controller.loadedActivities.value.data!.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'No tasks for today',
+                            style: AppTextStyle().textInter(
+                              size: 16.0,
+                              weight: FontWeight.w600,
                               color: AppColors.blackColor,
                             ),
-                          );
-                        }
-
-                        final todayTasks = _getTodayTasks(
-                          controller.loadedActivities.value.data ?? [],
+                          ),
                         );
+                      }
+                      final todayTasks = _getTodayTasks(
+                        controller.loadedActivities.value.data ?? [],
+                      );
 
-                        if (todayTasks.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No tasks for today',
-                              style: AppTextStyle().textInter(
-                                size: 16.0,
-                                weight: FontWeight.w600,
-                                color: AppColors.blackColor,
-                              ),
+                      if (todayTasks.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'No tasks for today',
+                            style: AppTextStyle().textInter(
+                              size: 16.0,
+                              weight: FontWeight.w600,
+                              color: AppColors.blackColor,
+                            ),
+                          ),
+                        );
+                      }
+
+                      todayTasks.sort((a, b) {
+                        final dateA =
+                            a.createdAt ??
+                            DateTime.fromMillisecondsSinceEpoch(0);
+                        final dateB =
+                            b.createdAt ??
+                            DateTime.fromMillisecondsSinceEpoch(0);
+                        return dateB.compareTo(dateA);
+                      });
+
+                      final task = todayTasks.first;
+
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(
+                            () => ScheduleDetailScreen(
+                              id: task.id ?? '',
+                              title: task.title ?? '',
                             ),
                           );
-                        }
-
-                        todayTasks.sort((a, b) {
-                          final dateA =
-                              a.createdAt ??
-                              DateTime.fromMillisecondsSinceEpoch(0);
-                          final dateB =
-                              b.createdAt ??
-                              DateTime.fromMillisecondsSinceEpoch(0);
-                          return dateB.compareTo(dateA);
-                        });
-
-                        final task = todayTasks.first;
-
-                        return GestureDetector(
-                          onTap: () {
-                            Get.to(
-                              () => ScheduleDetailScreen(
-                                id: task.id ?? '',
-                                title: task.title ?? '',
-                              ),
-                            );
-                          },
-                          child: _buildTaskItem(task),
-                        );
-                      },
-                    ),
+                        },
+                        child: _buildTaskItem(task),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -401,16 +410,16 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(Icons.access_time, size: 20, color: AppColors.blackColor),
-              const SizedBox(width: 4),
-              Text(
-                '${task.duration ?? 0} min',
-                style: AppTextStyle().textInter(
-                  size: 20,
-                  weight: FontWeight.w800,
-                  color: AppColors.blackColor,
-                ),
-              ),
+              // Icon(Icons.access_time, size: 20, color: AppColors.blackColor),
+              // const SizedBox(width: 4),
+              // Text(
+              //   '${task.duration ?? 0} min',
+              //   style: AppTextStyle().textInter(
+              //     size: 20,
+              //     weight: FontWeight.w800,
+              //     color: AppColors.blackColor,
+              //   ),
+              // ),
             ],
           ),
         ],

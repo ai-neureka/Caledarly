@@ -277,17 +277,17 @@ class AlarmManager {
       if (!batteryOptimizationStatus.isGranted) {
         print("⚠️ Battery optimization is enabled - this may prevent alarms!");
 
-        Get.snackbar(
-          "Battery Optimization Detected",
-          "Tap here to disable battery optimization for reliable alarms",
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          duration: Duration(seconds: 6),
-          snackPosition: SnackPosition.TOP,
-          onTap: (_) async {
-            await Permission.ignoreBatteryOptimizations.request();
-          },
-        );
+        // Get.snackbar(
+        //   "Battery Optimization Detected",
+        //   "Tap here to disable battery optimization for reliable alarms",
+        //   backgroundColor: Colors.orange,
+        //   colorText: Colors.white,
+        //   duration: Duration(seconds: 6),
+        //   snackPosition: SnackPosition.TOP,
+        //   onTap: (_) async {
+        //     await Permission.ignoreBatteryOptimizations.request();
+        //   },
+        // );
       } else {
         print("✅ Battery optimization is disabled - alarms will work reliably");
       }
