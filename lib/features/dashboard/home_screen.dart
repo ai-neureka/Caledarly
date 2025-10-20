@@ -69,9 +69,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  final txtgradient = LinearGradient(
-    colors: [AppColors.blue, Color(0xFF0080ff)],
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -95,12 +92,12 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topRight,
-            tileMode: TileMode.mirror,
-            colors: [AppColors.blackColor, Color(0xFFFFFFFF)],
-          ),
+          // gradient: LinearGradient(
+          //   begin: Alignment.bottomCenter,
+          //   end: Alignment.topRight,
+          //   tileMode: TileMode.mirror,
+          //   colors: [AppColors.blackColor, Color(0xFFFFFFFF)],
+          // ),
           borderRadius: BorderRadius.circular(60),
           color: AppColors.blackColor,
         ),
@@ -144,19 +141,12 @@ class _HomePageState extends State<HomePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ShaderMask(
-                    shaderCallback: (Rect bounds) {
-                      return txtgradient.createShader(
-                        Offset.zero & bounds.size,
-                      );
-                    },
-                    child: Text(
-                      currentDate,
-                      style: AppTextStyle().textInter(
-                        size: 60.0,
-                        weight: FontWeight.w900,
-                        color: AppColors.blackColor,
-                      ),
+                  Text(
+                    currentDate,
+                    style: AppTextStyle().textInter(
+                      size: 60.0,
+                      weight: FontWeight.w900,
+                      color: AppColors.blackColor,
                     ),
                   ),
                   Text(
