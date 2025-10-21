@@ -3,7 +3,8 @@ class ApiRoutes {
   static const register = 'auth/register';
   static const createActivity = 'activities';
   static const createActivityInstance = 'activity-instances';
-  static const getUserActivity = 'activities';
+  // static const getUserActivity = 'activities';
+  static const getUserActivity = 'activity-instances';
   static const getCategory = 'categories';
   static const activityDetail = 'activity-instances/activity/';
   static const getProfile = 'auth/me';

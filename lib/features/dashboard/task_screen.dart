@@ -1,5 +1,6 @@
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
+import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -116,7 +117,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
 
     // First filter: Only activities with category name "Task"
     final taskActivities = activities.where((activity) {
-      return activity.categoryId?.name?.toLowerCase() == 'task';
+      return activity.activityId!.categoryId?.toLowerCase() == 'task';
     }).toList();
 
     // Second filter: Based on selected view and date
@@ -159,7 +160,8 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
     final activities = _controller.loadedActivities.value.data ?? [];
 
     return activities.where((activity) {
-      if (activity.categoryId?.name?.toLowerCase() != 'task') return false;
+      if (activity.activityId!.categoryId?.toLowerCase() != 'task')
+        return false;
       if (activity.createdAt == null) return false;
 
       final createdDate = activity.createdAt!;
@@ -331,7 +333,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
           final isDone = task.status?.toLowerCase() == 'completed';
 
           Color priorityColor;
-          switch (task.priorityLevel?.toLowerCase()) {
+          switch (task.activityId!.priorityLevel?.toLowerCase()) {
             case 'high':
               priorityColor = Colors.redAccent;
               break;
@@ -359,16 +361,17 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
                 child: Icon(Icons.flag, color: priorityColor),
               ),
               title: Text(
-                task.title ?? 'Untitled Task',
+                task.activityId!.title ?? 'Untitled Task',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // if (timeDisplay.isNotEmpty) Text(timeDisplay),
-                  if (task.description != null && task.description!.isNotEmpty)
+                  if (task.activityId!.description != null &&
+                      task.activityId!.description!.isNotEmpty)
                     Text(
-                      task.description!,
+                      task.activityId!.description!,
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -402,7 +405,8 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
         // Get tasks for this specific day
         final allActivities = _controller.loadedActivities.value.data ?? [];
         final dayTasks = allActivities.where((activity) {
-          if (activity.categoryId?.name?.toLowerCase() != 'task') return false;
+          if (activity.activityId!.categoryId?.toLowerCase() != 'task')
+            return false;
           if (activity.createdAt == null) return false;
           return DateUtils.isSameDay(activity.createdAt!, day);
         }).toList();
@@ -467,7 +471,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
           // Get tasks for this day
           final allActivities = _controller.loadedActivities.value.data ?? [];
           final dayTasks = allActivities.where((activity) {
-            if (activity.categoryId?.name?.toLowerCase() != 'task')
+            if (activity.activityId!.categoryId?.toLowerCase() != 'task')
               return false;
             if (activity.createdAt == null) return false;
             return DateUtils.isSameDay(activity.createdAt!, date);
@@ -536,7 +540,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
           // Get tasks for this month
           final allActivities = _controller.loadedActivities.value.data ?? [];
           final monthTasks = allActivities.where((activity) {
-            if (activity.categoryId?.name?.toLowerCase() != 'task')
+            if (activity.activityId!.categoryId?.toLowerCase() != 'task')
               return false;
             if (activity.createdAt == null) return false;
             return activity.createdAt!.year == _selectedDate.year &&

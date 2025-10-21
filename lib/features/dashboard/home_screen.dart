@@ -2,6 +2,7 @@ import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
+import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
 import 'package:apc_schedular/features/schedules/presentation/schedule_detail_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -68,7 +69,6 @@ class _HomePageState extends State<HomePage> {
       print('Error fetching news: $e');
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +216,8 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                       }
-                      if (controller.loadedActivities.value.data!.isEmpty) {
+                      if (controller.loadedActivities.value.data == null ||
+                          controller.loadedActivities.value.data!.isEmpty) {
                         return Center(
                           child: Text(
                             'No tasks for today',
@@ -229,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                         );
                       }
                       final todayTasks = _getTodayTasks(
-                        controller.loadedActivities.value.data ?? [],
+                        controller.loadedActivities.value.data!,
                       );
 
                       if (todayTasks.isEmpty) {
@@ -261,8 +262,8 @@ class _HomePageState extends State<HomePage> {
                         onTap: () {
                           Get.to(
                             () => ScheduleDetailScreen(
-                              id: task.id ?? '',
-                              title: task.title ?? '',
+                              id: task.activityId?.id ?? '',
+                              title: task.activityId?.title ?? '',
                             ),
                           );
                         },
@@ -348,7 +349,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Expanded(
                 child: Text(
-                  task.title ?? '',
+                  task.activityId?.title ?? '',
                   style: AppTextStyle().textInter(
                     size: 22.0,
                     weight: FontWeight.w600,
@@ -359,11 +360,11 @@ class _HomePageState extends State<HomePage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor(task.priorityLevel),
+                  color: _getPriorityColor(task.activityId!.priorityLevel),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  task.priorityLevel ?? '',
+                  task.activityId!.priorityLevel ?? '',
                   style: AppTextStyle().textInter(
                     size: 16.0,
                     weight: FontWeight.w500,
@@ -373,10 +374,11 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          if (task.description != null && task.description!.isNotEmpty) ...[
+          if (task.activityId!.description != null &&
+              task.activityId!.description!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              task.description!,
+              task.activityId!.description!,
               style: AppTextStyle().textInter(
                 size: 12.0,
                 weight: FontWeight.w400,
@@ -392,10 +394,10 @@ class _HomePageState extends State<HomePage> {
               Icon(Icons.category, size: 20, color: AppColors.blue),
               const SizedBox(width: 4),
               Text(
-                task.categoryId?.name ?? 'No category',
+                task.activityId!.status ?? 'No category',
                 style: AppTextStyle().textInter(
-                  size: 20.0,
-                  weight: FontWeight.w800,
+                  size: 18.0,
+                  weight: FontWeight.w600,
                   color: AppColors.blue,
                 ),
               ),

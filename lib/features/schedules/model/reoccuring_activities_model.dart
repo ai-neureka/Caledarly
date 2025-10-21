@@ -1,3 +1,7 @@
+// To parse this JSON data, do
+//
+//     final reoccuringActivitiesModel = reoccuringActivitiesModelFromJson(jsonString);
+
 import 'dart:convert';
 
 ReoccuringActivitiesModel reoccuringActivitiesModelFromJson(String str) =>
@@ -18,7 +22,7 @@ class ReoccuringActivitiesModel {
         success: json["success"],
         data: json["data"] == null
             ? []
-            : List<Datum>.from(json["data"].map((x) => Datum.fromJson(x))),
+            : List<Datum>.from(json["data"]!.map((x) => Datum.fromJson(x))),
         pagination: json["pagination"] == null
             ? null
             : Pagination.fromJson(json["pagination"]),

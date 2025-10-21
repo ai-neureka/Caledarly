@@ -5,6 +5,7 @@ import 'package:apc_schedular/constants/api.dart';
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/http_service.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
+import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
 import 'package:apc_schedular/features/schedules/model/reoccuring_activities_model.dart';
 import 'package:apc_schedular/features/schedules/model/schedule_detail_model.dart';
@@ -13,9 +14,10 @@ import 'package:get/get.dart';
 class SchedulesController extends GetxController {
   RxBool loadingCats = RxBool(false);
   var loadedCats = CategoryModel().obs;
-  var loadedActivities = AllScheduleModel().obs;
+  // var loadedActivities = AllScheduleModel().obs;
   var loadedDetails = ScheduleDetailModel().obs;
   var reoccuringModel = ReoccuringActivitiesModel().obs;
+  var loadedActivities = AllActivityInstancesModel().obs;
 
   RxBool creatingActivity = RxBool(false);
   RxBool createActivityInstance = RxBool(false);
@@ -92,7 +94,7 @@ class SchedulesController extends GetxController {
 
   Future getAllReocccuringActivitiesRepo() async {
     final response = await BaseHttpClient.instance.get(
-      ApiRoutes.getUserActivity,
+      ApiRoutes.createActivity,
     );
     return jsonEncode(response);
   }
@@ -160,6 +162,7 @@ class SchedulesController extends GetxController {
         endTime,
       );
       createActivityInstance(false);
+      getAllUserActivitiesRepo();
       return result;
     } catch (e) {
       createActivityInstance(false);
@@ -173,7 +176,7 @@ class SchedulesController extends GetxController {
       var result = await getAllUserActivitiesRepo();
       loadingAllActivities(false);
       log(result);
-      loadedActivities.value = allScheduleModelFromJson(result);
+      loadedActivities.value = allActivityInstancesModelFromJson(result);
     } catch (e) {
       loadingAllActivities(false);
       rethrow;
@@ -204,7 +207,7 @@ class SchedulesController extends GetxController {
         'Success',
         'Update succesful',
         backgroundColor: AppColors.blue,
-        colorText: AppColors.blackColor,
+        colorText: AppColors.whiteColor,
       );
     } catch (e) {
       editingActivityInstance(false);
@@ -226,15 +229,16 @@ class SchedulesController extends GetxController {
         'Success',
         'succesful',
         backgroundColor: AppColors.blue,
-        colorText: AppColors.blackColor,
+        colorText: AppColors.whiteColor,
       );
+      getAllUserActivitiesController();
     } catch (e) {
       deletingActivity(false);
       Get.snackbar(
         'Opps',
         e.toString(),
         backgroundColor: AppColors.redColor,
-        colorText: AppColors.blackColor,
+        colorText: AppColors.whiteColor,
       );
     }
   }

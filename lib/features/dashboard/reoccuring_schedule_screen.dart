@@ -281,61 +281,182 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                 child: Column(
                   children: [
                     Expanded(
-                      child: Obx(() {
-                        final data =
-                            _activityController.reoccuringModel.value.data ??
-                            [];
-
-                        return GridView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: data.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                childAspectRatio: 0.8, // smaller cards
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                              ),
-                          itemBuilder: (context, index) {
-                            final item = data[index];
-                            final isSelected = selectedIndex.value == index;
-
-                            return GestureDetector(
-                              onTap: () {
-                                selectedIndex.value = index;
-                                _showScheduleModal(context, item.id ?? '');
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.blue.withOpacity(0.9)
-                                      : AppColors.blue.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.blue
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
+                      child: GridView.builder(
+                        itemCount: _activityController
+                            .reoccuringModel
+                            .value
+                            .data!
+                            .length,
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.85,
+                            ),
+                        itemBuilder: (context, index) {
+                          final item = _activityController
+                              .reoccuringModel
+                              .value
+                              .data?[index];
+                          return GestureDetector(
+                            onTap: () {
+                              _showScheduleModal(context, item.id!);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.blue,
+                                    AppColors.blue.withValues(alpha: 0.3),
+                                  ],
                                 ),
-                                padding: const EdgeInsets.all(8),
-                                child: Center(
-                                  child: Text(
-                                    item.title ?? '',
-                                    textAlign: TextAlign.center,
-                                    style: AppTextStyle().textInter(
-                                      size: 14,
-                                      color: AppColors.whiteColor,
-                                      weight: FontWeight.w600,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF667eea,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Stack(
+                                  children: [
+                                    // Decorative circles
+                                    Positioned(
+                                      top: -20,
+                                      right: -20,
+                                      child: Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    Positioned(
+                                      bottom: -10,
+                                      left: -10,
+                                      child: Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.08),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                    // Content
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Category badge
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              item?.categoryId?.name ?? 'N/A',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          // Title
+                                          Text(
+                                            item!.title!,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          // Description
+                                          Expanded(
+                                            child: Text(
+                                              item.description ?? '',
+                                              style: TextStyle(
+                                                color: Colors.white.withOpacity(
+                                                  0.85,
+                                                ),
+                                                fontSize: 13,
+                                                height: 1.3,
+                                              ),
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          // Author info
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white
+                                                      .withOpacity(0.3),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.person,
+                                                  size: 14,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  item.createdBy?.username ??
+                                                      'Unknown',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.white
+                                                        .withOpacity(0.9),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
-                        );
-                      }),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
