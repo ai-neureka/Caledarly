@@ -36,8 +36,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     _scheduleController.getActivityDetailController(widget.id);
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,6 +164,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                   maxLines: 2,
                                 ),
                               ),
+
                               const SizedBox(width: 8),
 
                               // Edit button (only if creator)
@@ -236,9 +235,15 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-
                           Text(
-                            'Start time: ${formatDateTime(startTime)}',
+                            DateFormat('d MMM, yyyy').format(detail.startTime!),
+                          ),
+                          SizedBox(height: 20),
+                          Divider(
+                            color: AppColors.blackColor.withValues(alpha: 0.3),
+                          ),
+                          Text(
+                            'Start time: ${DateFormat('hh:mm a').format(startTime!)}',
                             style: AppTextStyle().textInter(
                               size: 15,
                               weight: FontWeight.w500,
@@ -246,7 +251,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'End time: ${formatDateTime(endTime)}',
+                            'End time: ${DateFormat('hh:mm a').format(endTime!)}',
                             style: AppTextStyle().textInter(
                               size: 15,
                               weight: FontWeight.w500,
@@ -258,7 +263,9 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           ],
 
                           const SizedBox(height: 10),
-                          Divider(color: AppColors.blue),
+                          Divider(
+                            color: AppColors.blackColor.withValues(alpha: 0.2),
+                          ),
                           Text(
                             'Description',
                             style: AppTextStyle().textInter(

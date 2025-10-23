@@ -1,5 +1,6 @@
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
+import 'package:apc_schedular/features/profile/controller/profile_controller.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
 import 'package:apc_schedular/features/widget/custom_button.dart';
@@ -26,9 +27,9 @@ DateTime? selectedStartDateTime;
 DateTime? selectedEndDateTime;
 
 class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
-  // Track if activity has been created
   String? createdActivityId;
   bool isActivityCreated = false;
+  bool invitemembers = false; // Changed from final to regular bool
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +212,6 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                           ),
                         ),
 
-                      // Show Start and End time fields only after activity is created
                       if (isActivityCreated) ...[
                         SizedBox(height: 20),
                         Text(
@@ -390,6 +390,47 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                           ),
                         ),
                         SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: invitemembers,
+                              onChanged: (val) {
+                                setState(() {
+                                  invitemembers = val ?? false;
+                                });
+                                if (invitemembers) {
+                                  Get.bottomSheet(
+                                    MembersWidget(),
+                                    isScrollControlled: true,
+                                  );
+                                }
+                              },
+                            ),
+                            Text(
+                              'Invite member via email',
+                              style: AppTextStyle().textInter(
+                                size: 16,
+                                weight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Show selected members count
+                        if (scheduleCats.mails.isNotEmpty)
+                          // Padding(
+                          //   padding: const EdgeInsets.only(left: 16, top: 8),
+                          //   child: Obx(
+                          //     () => Text(
+                          //       '${scheduleCats.mails.length} member(s) selected',
+                          //       style: AppTextStyle().textInter(
+                          //         size: 14,
+                          //         color: AppColors.blue,
+                          //         weight: FontWeight.w500,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
+                          SizedBox(height: 20),
                         Obx(
                           () => CustomButtonWidget(
                             btnText: 'Create Activity Instance',
@@ -421,6 +462,16 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                     selectedEndDateTime!.toIso8601String(),
                                   );
 
+                              // Send emails if members were invited
+                              if (invitemembers &&
+                                  scheduleCats.mails.isNotEmpty) {
+                                await scheduleCats.sendEmailController(
+                                  scheduleCats.mails,
+                                  titleController.text,
+                                  descriptionController.text,
+                                );
+                              }
+
                               if (result != null && result['success'] == true) {
                                 Get.snackbar(
                                   'Success',
@@ -428,7 +479,6 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                   backgroundColor: Colors.green,
                                   colorText: Colors.white,
                                 );
-                                // Navigate back or to schedule list
                                 Navigator.pop(context);
                               } else {
                                 Get.snackbar(
@@ -475,6 +525,205 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
           borderRadius: BorderRadius.circular(15),
           borderSide: const BorderSide(color: AppColors.blackColor, width: 2),
         ),
+      ),
+    );
+  }
+}
+
+class MembersWidget extends StatefulWidget {
+  const MembersWidget({super.key});
+
+  @override
+  State<MembersWidget> createState() => _MembersWidgetState();
+}
+
+class _MembersWidgetState extends State<MembersWidget> {
+  final _profileController = Get.put(ProfileController());
+  final _scheduleController = Get.put(SchedulesController());
+  final Set<String> tempSelectedEmails = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with already selected emails
+    _profileController.getAllUsers();
+    tempSelectedEmails.addAll(
+      _scheduleController.mails.map((e) => e.toString()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          SizedBox(height: 20),
+          Text(
+            'Add Members',
+            style: AppTextStyle().textInter(size: 22, weight: FontWeight.w700),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Select members to invite',
+            style: AppTextStyle().textInter(
+              size: 14,
+              color: AppColors.textColor.withValues(alpha: 0.6),
+            ),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: Obx(
+              () => _profileController.loadingAllUsers.value
+                  ? Center(child: CircularProgressIndicator())
+                  : _profileController.loadedUsers.value.data == null ||
+                        _profileController.loadedUsers.value.data!.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No members available',
+                        style: AppTextStyle().textInter(size: 16),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount:
+                          _profileController.loadedUsers.value.data!.length,
+                      itemBuilder: (context, index) {
+                        final user =
+                            _profileController.loadedUsers.value.data![index];
+                        final isSelected = tempSelectedEmails.contains(
+                          user.email,
+                        );
+
+                        return Container(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.blue.withValues(alpha: 0.1)
+                                : AppColors.whiteColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.blue
+                                  : AppColors.textColor.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: CheckboxListTile(
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  tempSelectedEmails.add(user.email ?? '');
+                                } else {
+                                  tempSelectedEmails.remove(user.email);
+                                }
+                              });
+                            },
+                            title: Text(
+                              user.username ?? 'Unknown',
+                              style: AppTextStyle().textInter(
+                                size: 16,
+                                weight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              user.email ?? '',
+                              style: AppTextStyle().textInter(
+                                size: 14,
+                                color: AppColors.textColor.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                            ),
+                            activeColor: AppColors.blue,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.whiteColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Get.back();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: AppColors.blue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: AppTextStyle().textInter(
+                        size: 16,
+                        color: AppColors.blue,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Update the controller's email list
+                      _scheduleController.mails.clear();
+                      _scheduleController.mails.addAll(tempSelectedEmails);
+
+                      Get.back();
+                      Get.snackbar(
+                        'Success',
+                        '${tempSelectedEmails.length} member(s) selected',
+                        backgroundColor: Colors.green.withOpacity(0.2),
+                        colorText: Colors.black,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Done (${tempSelectedEmails.length})',
+                      style: AppTextStyle().textInter(
+                        size: 16,
+                        color: AppColors.whiteColor,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

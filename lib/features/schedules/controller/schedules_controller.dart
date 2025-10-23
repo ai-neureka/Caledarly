@@ -9,7 +9,9 @@ import 'package:apc_schedular/features/schedules/model/all_activity_instances_mo
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
 import 'package:apc_schedular/features/schedules/model/reoccuring_activities_model.dart';
 import 'package:apc_schedular/features/schedules/model/schedule_detail_model.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 
 class SchedulesController extends GetxController {
   RxBool loadingCats = RxBool(false);
@@ -27,6 +29,8 @@ class SchedulesController extends GetxController {
   RxBool loadingReoccuring = RxBool(false);
   RxBool editingActivityInstance = RxBool(false);
   RxBool deletingActivity = RxBool(false);
+  RxBool sendingEmail = RxBool(false);
+    List mails = [];
 
   //REPOSITORIES
   Future getCategoryRepo() async {
@@ -99,6 +103,20 @@ class SchedulesController extends GetxController {
     return jsonEncode(response);
   }
 
+  Future sendEmailRepo(List reciepients, subject, text) async {
+    final response = await BaseHttpClient.instance.post(
+      ApiRoutes.sendEmail,
+      body: {
+        "recipients": reciepients,
+        "subject": subject,
+        "text": text,
+        "html": "<p>This is a <strong>message</strong> for all users.</p>",
+        "category": "Newsletter",
+      },
+    );
+    return response;
+  }
+
   //CONTROLLERS
   @override
   onInit() async {
@@ -130,6 +148,25 @@ class SchedulesController extends GetxController {
     }
   }
 
+  // Future createActivityController(title, desc, catId, priorityLvl) async {
+  //   try {
+  //     creatingActivity(true);
+  //     var result = await createActivityRepo(title, desc, catId, priorityLvl);
+  //     creatingActivity(false);
+  //     return result;
+  //   } catch (e) {
+  //     creatingActivity(false);
+  //     var err = jsonEncode(e);
+  //     Get.snackbar(
+  //       'OPPSS',
+  //       err,
+  //       snackPosition: SnackPosition.BOTTOM,
+  //       backgroundColor: AppColors.blue,
+  //       colorText: AppColors.whiteColor,
+  //     );
+  //     rethrow;
+  //   }
+  // }
   Future createActivityController(title, desc, catId, priorityLvl) async {
     try {
       creatingActivity(true);
@@ -138,13 +175,58 @@ class SchedulesController extends GetxController {
       return result;
     } catch (e) {
       creatingActivity(false);
+
+      // Extract the error message properly
+      String errorMessage = 'An error occurred';
+      String errorTitle = 'OOPS';
+
+      if (e is ApiException) {
+        errorMessage = e.message ?? 'API error occurred';
+
+        // Handle specific status codes
+        if (e.statusCode == 403) {
+          errorTitle = 'Access Denied';
+          errorMessage =
+              e.message ?? 'You don\'t have permission to perform this action';
+        } else if (e.statusCode == 401) {
+          errorTitle = 'Unauthorized';
+          errorMessage = 'Please login again';
+        }
+      } else if (e is http.Response) {
+        // Handle http.Response errors
+        final statusCode = e.statusCode;
+
+        try {
+          final responseBody = jsonDecode(e.body);
+          if (responseBody is Map && responseBody['message'] != null) {
+            errorMessage = responseBody['message'];
+          }
+        } catch (_) {
+          errorMessage = e.body;
+        }
+
+        if (statusCode == 403) {
+          errorTitle = 'Access Denied';
+        } else if (statusCode == 401) {
+          errorTitle = 'Unauthorized';
+        }
+      } else if (e is http.ClientException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = e.toString();
+      }
+
       Get.snackbar(
-        'OPPSS',
-        e.toString(),
+        errorTitle,
+        errorMessage,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.blue,
+        backgroundColor: errorTitle == 'Access Denied'
+            ? Colors.red
+            : AppColors.blue,
         colorText: AppColors.whiteColor,
+        duration: Duration(seconds: 3),
       );
+
       rethrow;
     }
   }
@@ -240,6 +322,18 @@ class SchedulesController extends GetxController {
         backgroundColor: AppColors.redColor,
         colorText: AppColors.whiteColor,
       );
+    }
+  }
+
+  Future sendEmailController(reciepients, subject, text) async {
+    try {
+      sendingEmail(true);
+      await sendEmailRepo(reciepients, subject, text);
+      sendingEmail(false);
+    } catch (e) {
+      sendingEmail(false);
+      print(e);
+      Get.snackbar('Opps', '$e');
     }
   }
 }

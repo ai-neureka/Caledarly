@@ -75,14 +75,26 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: AppColors.whiteColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(children: [_buildTabButton("Today", 0)]),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.whiteColor.withValues(alpha: 0.2),
+                AppColors.blackColor.withValues(alpha: 0.1),
+              ],
             ),
-            Expanded(child: _buildTodayPage(context)),
-          ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(children: [_buildTabButton("Today", 0)]),
+              ),
+              Expanded(child: _buildTodayPage(context)),
+            ],
+          ),
         ),
       ),
     );
@@ -198,13 +210,22 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Today's tasks",
-                    style: AppTextStyle().textInter(
-                      size: 16.0,
-                      weight: FontWeight.w600,
-                      color: AppColors.blackColor,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Today's Activities",
+                        style: AppTextStyle().textInter(
+                          size: 16.0,
+                          weight: FontWeight.w600,
+                          color: AppColors.blackColor,
+                        ),
+                      ),
+                      Text(
+                        "You have ${(_schedulesController.loadedActivities.value.data?.length ?? '..')}"
+                            .toString(),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   GetX<SchedulesController>(
@@ -391,14 +412,18 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.category, size: 20, color: AppColors.blue),
+              Icon(
+                Icons.timelapse_sharp,
+                size: 20,
+                color: AppColors.blackColor,
+              ),
               const SizedBox(width: 4),
               Text(
-                task.activityId!.status ?? 'No category',
+                DateFormat('hh:mm a').format(task.startTime!),
                 style: AppTextStyle().textInter(
                   size: 18.0,
                   weight: FontWeight.w600,
-                  color: AppColors.blue,
+                  color: AppColors.blackColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -454,9 +479,9 @@ class _HomePageState extends State<HomePage> {
         return GestureDetector(
           onTap: () => _openNewsArticle(article.url),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10.0),
+            padding: const EdgeInsets.symmetric(vertical: 1.0),
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 1),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 color: AppColors.whiteColor,

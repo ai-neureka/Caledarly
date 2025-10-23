@@ -11,7 +11,7 @@ String allUsersModelToJson(AllUsersModel data) => json.encode(data.toJson());
 
 class AllUsersModel {
   bool? success;
-  List<AllUsers>? data;
+  List<Datum>? data;
   Pagination? pagination;
 
   AllUsersModel({this.success, this.data, this.pagination});
@@ -20,7 +20,7 @@ class AllUsersModel {
     success: json["success"],
     data: json["data"] == null
         ? []
-        : List<AllUsers>.from(json["data"]!.map((x) => AllUsers.fromJson(x))),
+        : List<Datum>.from(json["data"]!.map((x) => Datum.fromJson(x))),
     pagination: json["pagination"] == null
         ? null
         : Pagination.fromJson(json["pagination"]),
@@ -35,16 +35,16 @@ class AllUsersModel {
   };
 }
 
-class AllUsers {
+class Datum {
   String? id;
   String? username;
   String? email;
-  Role? role;
+  String? role;
   bool? isActive;
   DateTime? createdAt;
   int? v;
 
-  AllUsers({
+  Datum({
     this.id,
     this.username,
     this.email,
@@ -54,11 +54,11 @@ class AllUsers {
     this.v,
   });
 
-  factory AllUsers.fromJson(Map<String, dynamic> json) => AllUsers(
+  factory Datum.fromJson(Map<String, dynamic> json) => Datum(
     id: json["_id"],
     username: json["username"],
     email: json["email"],
-    role: roleValues.map[json["role"]]!,
+    role: json["role"],
     isActive: json["isActive"],
     createdAt: json["createdAt"] == null
         ? null
@@ -70,16 +70,12 @@ class AllUsers {
     "_id": id,
     "username": username,
     "email": email,
-    "role": roleValues.reverse[role],
+    "role": role,
     "isActive": isActive,
     "createdAt": createdAt?.toIso8601String(),
     "__v": v,
   };
 }
-
-enum Role { ADMIN, USER }
-
-final roleValues = EnumValues({"admin": Role.ADMIN, "user": Role.USER});
 
 class Pagination {
   int? page;
@@ -102,16 +98,4 @@ class Pagination {
     "total": total,
     "pages": pages,
   };
-}
-
-class EnumValues<T> {
-  Map<String, T> map;
-  late Map<T, String> reverseMap;
-
-  EnumValues(this.map);
-
-  Map<T, String> get reverse {
-    reverseMap = map.map((k, v) => MapEntry(v, k));
-    return reverseMap;
-  }
 }

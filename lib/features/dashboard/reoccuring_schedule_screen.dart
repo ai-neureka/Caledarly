@@ -1,6 +1,7 @@
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
+import 'package:apc_schedular/features/schedules/presentation/create_schdeule_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -70,6 +71,10 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                       startDate == null
                           ? "Select start date"
                           : dateFormat.format(startDate!),
+                      style: AppTextStyle().textInter(
+                        size: 18,
+                        weight: FontWeight.w500,
+                      ),
                     ),
                     trailing: const Icon(Icons.calendar_today_outlined),
                     onTap: () async {
@@ -251,6 +256,10 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
     );
   }
 
+  Future<void> _showAddActivityModal(BuildContext context) async {
+    Get.to(() => CreateSchdeuleScreen());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,28 +274,21 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
       body: Obx(
         () => _activityController.loadingReoccuring.value
             ? Center(child: CircularProgressIndicator(color: AppColors.blue))
-            : _activityController.reoccuringModel.value.data == null ||
-                  _activityController.reoccuringModel.value.data!.isEmpty
-            ? Center(
-                child: Text(
-                  'No activities',
-                  style: AppTextStyle().textInter(
-                    size: 18,
-                    weight: FontWeight.w600,
-                  ),
-                ),
-              )
             : Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    // GridView with Add Button as First Item
                     Expanded(
                       child: GridView.builder(
-                        itemCount: _activityController
-                            .reoccuringModel
-                            .value
-                            .data!
-                            .length,
+                        itemCount:
+                            (_activityController
+                                    .reoccuringModel
+                                    .value
+                                    .data
+                                    ?.length ??
+                                0) +
+                            1,
                         padding: const EdgeInsets.all(16),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -296,10 +298,75 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                               childAspectRatio: 0.85,
                             ),
                         itemBuilder: (context, index) {
+                          // First item is the Add button
+                          if (index == 0) {
+                            return GestureDetector(
+                              onTap: () => _showAddActivityModal(context),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white,
+                                      Colors.white,
+                                      // AppColors.blue.withValues(alpha: 0.7),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.blue.withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            AppColors.blue,
+                                            AppColors.blue.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                          ],
+                                        ),
+                                        color: AppColors.blue,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.add,
+                                        color: Colors.white,
+                                        size: 32,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Add Activity',
+                                      style: AppTextStyle().textInter(
+                                        size: 14,
+                                        color: AppColors.blue,
+                                        weight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          // Subsequent items are activities
                           final item = _activityController
                               .reoccuringModel
                               .value
-                              .data?[index];
+                              .data?[index - 1];
                           return GestureDetector(
                             onTap: () {
                               _showScheduleModal(context, item.id!);

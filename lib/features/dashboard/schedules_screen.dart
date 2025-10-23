@@ -190,6 +190,15 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
     }
   }
 
+  String formatDateTime(DateTime? dt) {
+    if (dt == null) return '';
+
+    final dateFormat = DateFormat('d MMM, yyyy');
+    final timeFormat = DateFormat('h:mm a');
+
+    return '${dateFormat.format(dt)} at ${timeFormat.format(dt)} (WAT)';
+  }
+
   Widget _buildDayHeader() {
     return Column(
       children: [
@@ -338,7 +347,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
           }
         } else {
           Get.to(
-            () => CreateSchdeuleScreen(),
+            () => ReoccuringScheduleScreen(),
             arguments: {'preselectedDate': day},
           )?.then((_) {
             _controller.getAllUserActivitiesController();
@@ -559,7 +568,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                       hour,
                     );
                     Get.to(
-                      () => CreateSchdeuleScreen(),
+                      () => ReoccuringScheduleScreen(),
                       arguments: {'preselectedDate': preselectedDateTime},
                     )?.then((_) {
                       _controller.getAllUserActivitiesController();
@@ -687,7 +696,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                                             Text(
                                               DateFormat(
                                                 'hh:mm a',
-                                              ).format(schedule.createdAt!),
+                                              ).format(schedule.startTime!),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 color: AppColors.blue,
@@ -971,11 +980,19 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
         if (a.createdAt == null || b.createdAt == null) return 0;
         return a.createdAt!.compareTo(b.createdAt!);
       });
+      final now = DateTime.now();
+
+      // Sort most recent first
+      final reversedActivities = filteredActivities.reversed.toList();
 
       return ListView.builder(
-        itemCount: filteredActivities.length,
+        itemCount: reversedActivities.length,
         itemBuilder: (context, index) {
-          final activity = filteredActivities[index];
+          final activity = reversedActivities[index];
+
+          // Determine if the activity is in the past
+          final isPast =
+              activity.startTime != null && activity.startTime!.isBefore(now);
 
           String timeDisplay = '';
           if (activity.createdAt != null) {
@@ -993,7 +1010,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
               Get.to(
                 () => ScheduleDetailScreen(
                   id: activity.activityId?.id ?? '',
-                  title: activity.activityId!.title ?? '',
+                  title: activity.activityId?.title ?? '',
                 ),
               );
             },
@@ -1006,31 +1023,53 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
               elevation: 5,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: AppColors.blue.withOpacity(0.2),
-                  child: const Icon(Icons.schedule, color: AppColors.blue),
+                  backgroundColor: isPast
+                      ? Colors.grey.withOpacity(0.2)
+                      : AppColors.blue.withOpacity(0.2),
+                  child: Icon(
+                    Icons.schedule,
+                    color: isPast ? Colors.grey : AppColors.blue,
+                  ),
                 ),
                 title: Text(
                   activity.activityId?.title ?? 'Untitled',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isPast ? Colors.grey : Colors.black,
+                  ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       activity.activityId?.description ?? '',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isPast ? Colors.grey[400] : Colors.grey[600],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (activity.activityId?.categoryId != null)
                       Text(
-                        activity.activityId?.categoryId ?? '',
+                        DateFormat('hh:mm a').format(activity.startTime!),
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.blue,
+                          color: isPast ? Colors.grey : AppColors.blue,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    Visibility(
+                      visible: isPast ? true : false,
+                      child: Text(
+                        'Passed Schedule',
+                        style: AppTextStyle().textInter(
+                          size: 12,
+                          color: AppColors.redColor.withValues(alpha: 0.2),
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 trailing: activity.activityId?.priorityLevel != null
@@ -1050,9 +1089,11 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: _getPriorityColor(
-                              activity.activityId!.priorityLevel!,
-                            ),
+                            color: isPast
+                                ? Colors.grey
+                                : _getPriorityColor(
+                                    activity.activityId!.priorityLevel!,
+                                  ),
                           ),
                         ),
                       )

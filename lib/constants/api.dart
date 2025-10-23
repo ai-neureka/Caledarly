@@ -11,4 +11,6 @@ class ApiRoutes {
   static const changePassword = 'auth/change-password';
   static const allUsers = 'admin/users';
   static const deleteActivity = 'activity-instances';
+  static const sendEmail = 'mail/send-many-email';
+  
 }
