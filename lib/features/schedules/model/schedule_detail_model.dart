@@ -12,32 +12,20 @@ String scheduleDetailModelToJson(ScheduleDetailModel data) =>
 
 class ScheduleDetailModel {
   bool? success;
-  List<Datum>? data;
-  Pagination? pagination;
+  Data? data;
 
-  ScheduleDetailModel({this.success, this.data, this.pagination});
+  ScheduleDetailModel({this.success, this.data});
 
   factory ScheduleDetailModel.fromJson(Map<String, dynamic> json) =>
       ScheduleDetailModel(
         success: json["success"],
-        data: json["data"] == null
-            ? []
-            : List<Datum>.from(json["data"]!.map((x) => Datum.fromJson(x))),
-        pagination: json["pagination"] == null
-            ? null
-            : Pagination.fromJson(json["pagination"]),
+        data: json["data"] == null ? null : Data.fromJson(json["data"]),
       );
 
-  Map<String, dynamic> toJson() => {
-    "success": success,
-    "data": data == null
-        ? []
-        : List<dynamic>.from(data!.map((x) => x.toJson())),
-    "pagination": pagination?.toJson(),
-  };
+  Map<String, dynamic> toJson() => {"success": success, "data": data?.toJson()};
 }
 
-class Datum {
+class Data {
   String? id;
   ActivityId? activityId;
   DateTime? startTime;
@@ -48,7 +36,7 @@ class Datum {
   DateTime? updatedAt;
   int? v;
 
-  Datum({
+  Data({
     this.id,
     this.activityId,
     this.startTime,
@@ -60,7 +48,7 @@ class Datum {
     this.v,
   });
 
-  factory Datum.fromJson(Map<String, dynamic> json) => Datum(
+  factory Data.fromJson(Map<String, dynamic> json) => Data(
     id: json["_id"],
     activityId: json["activity_id"] == null
         ? null
@@ -170,28 +158,5 @@ class CreatedBy {
     "_id": id,
     "username": username,
     "email": email,
-  };
-}
-
-class Pagination {
-  int? page;
-  int? limit;
-  int? total;
-  int? pages;
-
-  Pagination({this.page, this.limit, this.total, this.pages});
-
-  factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
-    page: json["page"],
-    limit: json["limit"],
-    total: json["total"],
-    pages: json["pages"],
-  );
-
-  Map<String, dynamic> toJson() => {
-    "page": page,
-    "limit": limit,
-    "total": total,
-    "pages": pages,
   };
 }

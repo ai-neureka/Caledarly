@@ -29,7 +29,11 @@ DateTime? selectedEndDateTime;
 class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
   String? createdActivityId;
   bool isActivityCreated = false;
-  bool invitemembers = false; // Changed from final to regular bool
+  bool invitemembers = false;
+  String? selectedType; // 'Task' or 'Meeting'
+
+  // Check if selected category is a task
+  bool get isTask => selectedCategory?.name?.toLowerCase() == 'task';
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +114,13 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                             setState(() {
                               selectedCategory = val;
                               selectedCatID = val;
+                              // Reset fields when category changes
+                              if (isActivityCreated) {
+                                selectedStartDateTime = null;
+                                selectedEndDateTime = null;
+                                scheduleCats.mails.clear();
+                                invitemembers = false;
+                              }
                             });
                           },
                         ),
@@ -197,7 +208,9 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                 });
                                 Get.snackbar(
                                   'Success',
-                                  'Activity created! Now set the start and end time.',
+                                  isTask
+                                      ? 'Activity created! Now assign to members.'
+                                      : 'Activity created! Now set the start and end time.',
                                   backgroundColor: Colors.green,
                                   colorText: Colors.white,
                                 );
@@ -213,183 +226,188 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                         ),
 
                       if (isActivityCreated) ...[
-                        SizedBox(height: 20),
-                        Text(
-                          'Start',
-                          style: AppTextStyle().textInter(
-                            size: 16,
-                            weight: FontWeight.w500,
+                        // Show time pickers only for NON-TASK categories (i.e., meetings)
+                        if (!isTask) ...[
+                          SizedBox(height: 20),
+                          Text(
+                            'Start',
+                            style: AppTextStyle().textInter(
+                              size: 16,
+                              weight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            DateTime temp =
-                                selectedStartDateTime ?? DateTime.now();
-                            final DateTime? picked =
-                                await showCupertinoModalPopup<DateTime>(
-                                  context: context,
-                                  builder: (ctx) => Container(
-                                    height: 300,
-                                    color: Colors.white,
-                                    child: Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 220,
-                                          child: CupertinoDatePicker(
-                                            mode: CupertinoDatePickerMode
-                                                .dateAndTime,
-                                            initialDateTime:
-                                                selectedStartDateTime ??
-                                                DateTime.now(),
-                                            use24hFormat: false,
-                                            onDateTimeChanged: (val) =>
-                                                temp = val,
+                          SizedBox(height: 8),
+                          InkWell(
+                            onTap: () async {
+                              DateTime temp =
+                                  selectedStartDateTime ?? DateTime.now();
+                              final DateTime? picked =
+                                  await showCupertinoModalPopup<DateTime>(
+                                    context: context,
+                                    builder: (ctx) => Container(
+                                      height: 300,
+                                      color: Colors.white,
+                                      child: Column(
+                                        children: [
+                                          SizedBox(
+                                            height: 220,
+                                            child: CupertinoDatePicker(
+                                              mode: CupertinoDatePickerMode
+                                                  .dateAndTime,
+                                              initialDateTime:
+                                                  selectedStartDateTime ??
+                                                  DateTime.now(),
+                                              use24hFormat: false,
+                                              onDateTimeChanged: (val) =>
+                                                  temp = val,
+                                            ),
                                           ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            CupertinoButton(
-                                              child: Text('Cancel'),
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(),
-                                            ),
-                                            CupertinoButton(
-                                              child: Text('Done'),
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(temp),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-
-                            if (picked != null) {
-                              setState(() {
-                                selectedStartDateTime = picked;
-                              });
-                            }
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: AppColors.textColor.withValues(
-                                  alpha: 0.2,
-                                ),
-                              ),
-                              color: AppColors.whiteColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              selectedStartDateTime != null
-                                  ? selectedStartDateTime!
-                                        .toLocal()
-                                        .toString()
-                                        .split('.')
-                                        .first
-                                  : 'Select start date & time',
-                              style: AppTextStyle().textInter(size: 14),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'End',
-                          style: AppTextStyle().textInter(
-                            size: 16,
-                            weight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            DateTime temp =
-                                selectedEndDateTime ?? DateTime.now();
-                            final DateTime? picked =
-                                await showCupertinoModalPopup<DateTime>(
-                                  context: context,
-                                  builder: (ctx) => Container(
-                                    height: 300,
-                                    color: Colors.white,
-                                    child: Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 220,
-                                          child: CupertinoDatePicker(
-                                            mode: CupertinoDatePickerMode
-                                                .dateAndTime,
-                                            initialDateTime:
-                                                selectedEndDateTime ??
-                                                DateTime.now(),
-                                            use24hFormat: false,
-                                            onDateTimeChanged: (val) =>
-                                                temp = val,
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              CupertinoButton(
+                                                child: Text('Cancel'),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(),
+                                              ),
+                                              CupertinoButton(
+                                                child: Text('Done'),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(temp),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            CupertinoButton(
-                                              child: Text('Cancel'),
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(),
-                                            ),
-                                            CupertinoButton(
-                                              child: Text('Done'),
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(temp),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
 
-                            if (picked != null) {
-                              setState(() {
-                                selectedEndDateTime = picked;
-                              });
-                            }
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: AppColors.textColor.withValues(
-                                  alpha: 0.2,
-                                ),
+                              if (picked != null) {
+                                setState(() {
+                                  selectedStartDateTime = picked;
+                                });
+                              }
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
-                              color: AppColors.whiteColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              selectedEndDateTime != null
-                                  ? selectedEndDateTime!
-                                        .toLocal()
-                                        .toString()
-                                        .split('.')
-                                        .first
-                                  : 'Select end date & time',
-                              style: AppTextStyle().textInter(size: 14),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.textColor.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                                color: AppColors.whiteColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                selectedStartDateTime != null
+                                    ? selectedStartDateTime!
+                                          .toLocal()
+                                          .toString()
+                                          .split('.')
+                                          .first
+                                    : 'Select start date & time',
+                                style: AppTextStyle().textInter(size: 14),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 20),
+                          SizedBox(height: 20),
+                          Text(
+                            'End',
+                            style: AppTextStyle().textInter(
+                              size: 16,
+                              weight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          InkWell(
+                            onTap: () async {
+                              DateTime temp =
+                                  selectedEndDateTime ?? DateTime.now();
+                              final DateTime? picked =
+                                  await showCupertinoModalPopup<DateTime>(
+                                    context: context,
+                                    builder: (ctx) => Container(
+                                      height: 300,
+                                      color: Colors.white,
+                                      child: Column(
+                                        children: [
+                                          SizedBox(
+                                            height: 220,
+                                            child: CupertinoDatePicker(
+                                              mode: CupertinoDatePickerMode
+                                                  .dateAndTime,
+                                              initialDateTime:
+                                                  selectedEndDateTime ??
+                                                  DateTime.now(),
+                                              use24hFormat: false,
+                                              onDateTimeChanged: (val) =>
+                                                  temp = val,
+                                            ),
+                                          ),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              CupertinoButton(
+                                                child: Text('Cancel'),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(),
+                                              ),
+                                              CupertinoButton(
+                                                child: Text('Done'),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(temp),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+
+                              if (picked != null) {
+                                setState(() {
+                                  selectedEndDateTime = picked;
+                                });
+                              }
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.textColor.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                                color: AppColors.whiteColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                selectedEndDateTime != null
+                                    ? selectedEndDateTime!
+                                          .toLocal()
+                                          .toString()
+                                          .split('.')
+                                          .first
+                                    : 'Select end date & time',
+                                style: AppTextStyle().textInter(size: 14),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                        ],
+
+                        // Member selection section
                         Row(
                           children: [
                             Checkbox(
@@ -400,14 +418,16 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                 });
                                 if (invitemembers) {
                                   Get.bottomSheet(
-                                    MembersWidget(),
+                                    MembersWidget(isTask: isTask),
                                     isScrollControlled: true,
                                   );
                                 }
                               },
                             ),
                             Text(
-                              'Invite member via email',
+                              isTask
+                                  ? 'Assign members'
+                                  : 'Invite member via email',
                               style: AppTextStyle().textInter(
                                 size: 16,
                                 weight: FontWeight.w500,
@@ -415,80 +435,137 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                             ),
                           ],
                         ),
-                        // Show selected members count
-                        if (scheduleCats.mails.isNotEmpty)
-                          // Padding(
-                          //   padding: const EdgeInsets.only(left: 16, top: 8),
-                          //   child: Obx(
-                          //     () => Text(
-                          //       '${scheduleCats.mails.length} member(s) selected',
-                          //       style: AppTextStyle().textInter(
-                          //         size: 14,
-                          //         color: AppColors.blue,
-                          //         weight: FontWeight.w500,
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
+
+                        if (scheduleCats.mails.isNotEmpty ||
+                            scheduleCats.selectedUserIds.isNotEmpty)
                           SizedBox(height: 20),
+
                         Obx(
                           () => CustomButtonWidget(
-                            btnText: 'Create Activity Instance',
+                            btnText: isTask
+                                ? 'Create Task'
+                                : 'Create Activity Instance',
                             onPressed: () async {
-                              // Validate times
-                              if (selectedStartDateTime == null ||
-                                  selectedEndDateTime == null) {
-                                Get.snackbar(
-                                  'Error',
-                                  'Please select both start and end times',
-                                );
-                                return;
-                              }
-                              if (selectedEndDateTime!.isBefore(
-                                selectedStartDateTime!,
-                              )) {
-                                Get.snackbar(
-                                  'Error',
-                                  'End time must be after start time',
-                                );
-                                return;
-                              }
-
-                              // Create activity instance
-                              var result = await scheduleCats
-                                  .createActivityInstanceController(
-                                    createdActivityId,
-                                    selectedStartDateTime!.toIso8601String(),
-                                    selectedEndDateTime!.toIso8601String(),
+                              if (isTask) {
+                                // Task creation flow
+                                if (scheduleCats.selectedUserIds.isEmpty) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Please assign at least one member',
                                   );
+                                  return;
+                                }
 
-                              // Send emails if members were invited
-                              if (invitemembers &&
-                                  scheduleCats.mails.isNotEmpty) {
-                                await scheduleCats.sendEmailController(
-                                  scheduleCats.mails,
-                                  titleController.text,
-                                  descriptionController.text,
+                                // Step 1: Create activity instance with default times
+                                // Using current time as start and 1 hour later as end for tasks
+                                final now = DateTime.now();
+                                final oneHourLater = now.add(
+                                  Duration(hours: 1),
                                 );
-                              }
 
-                              if (result != null && result['success'] == true) {
-                                Get.snackbar(
-                                  'Success',
-                                  'Activity instance created successfully!',
-                                  backgroundColor: Colors.green,
-                                  colorText: Colors.white,
-                                );
-                                Navigator.pop(context);
+                                var instanceResult = await scheduleCats
+                                    .createActivityInstanceController(
+                                      createdActivityId,
+                                      now.toIso8601String(),
+                                      oneHourLater.toIso8601String(),
+                                    );
+
+                                if (instanceResult == null ||
+                                    instanceResult['success'] != true) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to create activity instance',
+                                  );
+                                  return;
+                                }
+
+                                // Step 2: Extract the instance ID from the response
+                                final instanceId =
+                                    instanceResult['data']['_id'];
+
+                                if (instanceId == null) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to get instance ID',
+                                  );
+                                  return;
+                                }
+
+                                // Step 3: Create task with the instance ID
+                                var taskResult = await scheduleCats
+                                    .createTaskController(
+                                      instanceId,
+                                      scheduleCats.selectedUserIds.toList(),
+                                      descriptionController.text,
+                                    );
+
+                                if (taskResult != null &&
+                                    taskResult['success'] == true) {
+                                  Get.snackbar(
+                                    'Success',
+                                    'Task created and assigned successfully!',
+                                    backgroundColor: Colors.green,
+                                    colorText: Colors.white,
+                                  );
+                                  Navigator.pop(context);
+                                } else {}
                               } else {
-                                Get.snackbar(
-                                  'Error',
-                                  'Failed to create activity instance',
-                                );
+                                // Meeting creation flow
+                                if (selectedStartDateTime == null ||
+                                    selectedEndDateTime == null) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Please select both start and end times',
+                                  );
+                                  return;
+                                }
+                                if (selectedEndDateTime!.isBefore(
+                                  selectedStartDateTime!,
+                                )) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'End time must be after start time',
+                                  );
+                                  return;
+                                }
+
+                                var result = await scheduleCats
+                                    .createActivityInstanceController(
+                                      createdActivityId,
+                                      selectedStartDateTime!.toIso8601String(),
+                                      selectedEndDateTime!.toIso8601String(),
+                                    );
+
+                                // Send emails if members were invited
+                                if (invitemembers &&
+                                    scheduleCats.mails.isNotEmpty) {
+                                  await scheduleCats.sendEmailController(
+                                    scheduleCats.mails,
+                                    titleController.text,
+                                    descriptionController.text,
+                                  );
+                                }
+
+                                if (result != null &&
+                                    result['success'] == true) {
+                                  Get.snackbar(
+                                    'Success',
+                                    'Activity instance created successfully!',
+                                    backgroundColor: Colors.green,
+                                    colorText: Colors.white,
+                                  );
+                                  Navigator.pop(context);
+                                } else {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to create activity instance',
+                                  );
+                                }
                               }
                             },
-                            isLoading:
-                                scheduleCats.createActivityInstance.value,
+                            isLoading: isTask
+                                ? scheduleCats.creatingTask.value
+                                : scheduleCats.createActivityInstance.value,
                           ),
                         ),
                       ],
@@ -531,7 +608,9 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
 }
 
 class MembersWidget extends StatefulWidget {
-  const MembersWidget({super.key});
+  final bool isTask;
+
+  const MembersWidget({super.key, this.isTask = false});
 
   @override
   State<MembersWidget> createState() => _MembersWidgetState();
@@ -541,15 +620,119 @@ class _MembersWidgetState extends State<MembersWidget> {
   final _profileController = Get.put(ProfileController());
   final _scheduleController = Get.put(SchedulesController());
   final Set<String> tempSelectedEmails = {};
+  final Set<String> tempSelectedUserIds = {};
+  final TextEditingController _emailController = TextEditingController();
+  final List<String> manualEmails = [];
 
   @override
   void initState() {
     super.initState();
-    // Initialize with already selected emails
     _profileController.getAllUsers();
-    tempSelectedEmails.addAll(
-      _scheduleController.mails.map((e) => e.toString()),
+
+    if (widget.isTask) {
+      // For tasks, load selected user IDs
+      tempSelectedUserIds.addAll(
+        _scheduleController.selectedUserIds.map((e) => e.toString()),
+      );
+    } else {
+      // For meetings, load selected emails
+      tempSelectedEmails.addAll(
+        _scheduleController.mails.map((e) => e.toString()),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
+    return emailRegex.hasMatch(email.trim());
+  }
+
+  void _addManualEmail() {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please enter an email address',
+        backgroundColor: Colors.red.withOpacity(0.2),
+        colorText: Colors.black,
+      );
+      return;
+    }
+
+    final emailList = email
+        .split(RegExp(r'[,;\s]+'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    int addedCount = 0;
+    int invalidCount = 0;
+    int duplicateCount = 0;
+
+    for (final emailItem in emailList) {
+      if (!_isValidEmail(emailItem)) {
+        invalidCount++;
+        continue;
+      }
+
+      if (manualEmails.contains(emailItem) ||
+          tempSelectedEmails.contains(emailItem)) {
+        duplicateCount++;
+        continue;
+      }
+
+      setState(() {
+        manualEmails.add(emailItem);
+      });
+      addedCount++;
+    }
+
+    _emailController.clear();
+
+    if (addedCount > 0) {
+      Get.snackbar(
+        'Success',
+        '$addedCount email(s) added',
+        backgroundColor: Colors.green.withOpacity(0.2),
+        colorText: Colors.black,
+        duration: Duration(seconds: 2),
+      );
+    }
+
+    if (invalidCount > 0) {
+      Get.snackbar(
+        'Warning',
+        '$invalidCount invalid email(s) skipped',
+        backgroundColor: Colors.orange.withOpacity(0.2),
+        colorText: Colors.black,
+        duration: Duration(seconds: 2),
+      );
+    }
+
+    if (duplicateCount > 0) {
+      Get.snackbar(
+        'Info',
+        '$duplicateCount duplicate email(s) skipped',
+        backgroundColor: Colors.blue.withOpacity(0.2),
+        colorText: Colors.black,
+        duration: Duration(seconds: 2),
+      );
+    }
+  }
+
+  void _removeManualEmail(String email) {
+    setState(() {
+      manualEmails.remove(email);
+    });
   }
 
   @override
@@ -567,18 +750,205 @@ class _MembersWidgetState extends State<MembersWidget> {
         children: [
           SizedBox(height: 20),
           Text(
-            'Add Members',
+            widget.isTask ? 'Assign Members' : 'Add Members',
             style: AppTextStyle().textInter(size: 22, weight: FontWeight.w700),
           ),
           SizedBox(height: 10),
           Text(
-            'Select members to invite',
+            widget.isTask
+                ? 'Select members to assign this task'
+                : 'Select members or add emails manually',
             style: AppTextStyle().textInter(
               size: 14,
               color: AppColors.textColor.withValues(alpha: 0.6),
             ),
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 16),
+
+          // Show email input only for meetings, not tasks
+          if (!widget.isTask) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.blue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.blue.withValues(alpha: 0.3),
+                  ),
+                ),
+                padding: EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 20,
+                          color: AppColors.blue,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Add Email Address',
+                          style: AppTextStyle().textInter(
+                            size: 15,
+                            weight: FontWeight.w600,
+                            color: AppColors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              hintText: 'Enter email(s), separate with commas',
+                              hintStyle: TextStyle(fontSize: 13),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: AppColors.textColor.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: AppColors.textColor.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: AppColors.blue,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            onSubmitted: (_) => _addManualEmail(),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _addManualEmail,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.blue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: Text(
+                            'Add',
+                            style: AppTextStyle().textInter(
+                              size: 14,
+                              color: AppColors.whiteColor,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (manualEmails.isNotEmpty) ...[
+                      SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: manualEmails.map((email) {
+                          return Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.blue,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.email,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  email,
+                                  style: AppTextStyle().textInter(
+                                    size: 13,
+                                    color: Colors.white,
+                                    weight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () => _removeManualEmail(email),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: AppColors.textColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Text(
+                      'OR SELECT FROM LIST',
+                      style: AppTextStyle().textInter(
+                        size: 12,
+                        color: AppColors.textColor.withValues(alpha: 0.5),
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: AppColors.textColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+          ],
+
           Expanded(
             child: Obx(
               () => _profileController.loadingAllUsers.value
@@ -597,9 +967,10 @@ class _MembersWidgetState extends State<MembersWidget> {
                       itemBuilder: (context, index) {
                         final user =
                             _profileController.loadedUsers.value.data![index];
-                        final isSelected = tempSelectedEmails.contains(
-                          user.email,
-                        );
+
+                        final isSelected = widget.isTask
+                            ? tempSelectedUserIds.contains(user.id)
+                            : tempSelectedEmails.contains(user.email);
 
                         return Container(
                           margin: EdgeInsets.symmetric(
@@ -621,10 +992,20 @@ class _MembersWidgetState extends State<MembersWidget> {
                             value: isSelected,
                             onChanged: (bool? value) {
                               setState(() {
-                                if (value == true) {
-                                  tempSelectedEmails.add(user.email ?? '');
+                                if (widget.isTask) {
+                                  // For tasks, store user IDs
+                                  if (value == true) {
+                                    tempSelectedUserIds.add(user.id ?? '');
+                                  } else {
+                                    tempSelectedUserIds.remove(user.id);
+                                  }
                                 } else {
-                                  tempSelectedEmails.remove(user.email);
+                                  // For meetings, store emails
+                                  if (value == true) {
+                                    tempSelectedEmails.add(user.email ?? '');
+                                  } else {
+                                    tempSelectedEmails.remove(user.email);
+                                  }
                                 }
                               });
                             },
@@ -691,17 +1072,37 @@ class _MembersWidgetState extends State<MembersWidget> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Update the controller's email list
-                      _scheduleController.mails.clear();
-                      _scheduleController.mails.addAll(tempSelectedEmails);
+                      if (widget.isTask) {
+                        // For tasks, save user IDs
+                        _scheduleController.selectedUserIds.clear();
+                        _scheduleController.selectedUserIds.addAll(
+                          tempSelectedUserIds,
+                        );
 
-                      Get.back();
-                      Get.snackbar(
-                        'Success',
-                        '${tempSelectedEmails.length} member(s) selected',
-                        backgroundColor: Colors.green.withOpacity(0.2),
-                        colorText: Colors.black,
-                      );
+                        Get.back();
+                        Get.snackbar(
+                          'Success',
+                          '${tempSelectedUserIds.length} member(s) assigned',
+                          backgroundColor: Colors.green.withOpacity(0.2),
+                          colorText: Colors.black,
+                        );
+                      } else {
+                        // For meetings, save emails (both selected and manual)
+                        _scheduleController.mails.clear();
+                        _scheduleController.mails.addAll(tempSelectedEmails);
+                        _scheduleController.mails.addAll(manualEmails);
+
+                        final totalEmails =
+                            tempSelectedEmails.length + manualEmails.length;
+
+                        Get.back();
+                        Get.snackbar(
+                          'Success',
+                          '$totalEmails email(s) selected',
+                          backgroundColor: Colors.green.withOpacity(0.2),
+                          colorText: Colors.black,
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.blue,
@@ -711,7 +1112,9 @@ class _MembersWidgetState extends State<MembersWidget> {
                       ),
                     ),
                     child: Text(
-                      'Done (${tempSelectedEmails.length})',
+                      widget.isTask
+                          ? 'Done (${tempSelectedUserIds.length})'
+                          : 'Done (${tempSelectedEmails.length + manualEmails.length})',
                       style: AppTextStyle().textInter(
                         size: 16,
                         color: AppColors.whiteColor,

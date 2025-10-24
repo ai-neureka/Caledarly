@@ -55,11 +55,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         final userId = _profileCotroller.loadedProfile.value.data?.user?.id;
         final data = _scheduleController.loadedDetails.value.data;
 
-        if (data == null || data.isEmpty) {
+        if (data == null) {
           return const Center(child: Text('Error fetching details'));
         }
 
-        final detail = data.first;
+        final detail = data;
 
         // Check if current user is the creator
         // Handle both object and string cases for created_by
@@ -343,8 +343,15 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                               nowTz.second,
                             );
 
+                            // Calculate time difference between now and start time
+                            final timeUntilStart = startTime.difference(
+                              currentTime,
+                            );
+
+                            // Check if reminder time is valid AND if start time is at least 5 minutes away
                             final isValidTime =
-                                reminderTime?.isAfter(currentTime) ?? false;
+                                (reminderTime?.isAfter(currentTime) ?? false) &&
+                                timeUntilStart.inMinutes >= 5;
 
                             return Opacity(
                               opacity: isValidTime ? 1.0 : 0.5,
@@ -377,7 +384,9 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                         ),
                                       )
                                     : Text(
-                                        'Not available (time has passed)',
+                                        timeUntilStart.inMinutes < 5
+                                            ? 'Not available (less than 5 minutes until start)'
+                                            : 'Not available (time has passed)',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.red.shade400,

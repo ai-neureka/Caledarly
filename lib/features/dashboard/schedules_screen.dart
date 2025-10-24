@@ -544,9 +544,10 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
       return ListView.builder(
         itemCount: 24,
         itemBuilder: (context, hour) {
+          
           final schedulesInHour = schedulesForDay.where((schedule) {
-            if (schedule.createdAt == null) return false;
-            return schedule.createdAt!.hour == hour;
+            if (schedule.startTime == null) return false;
+            return schedule.startTime!.hour == hour;
           }).toList();
 
           // Check if this hour is in the past

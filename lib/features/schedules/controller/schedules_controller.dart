@@ -6,6 +6,7 @@ import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/http_service.dart';
 import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
 import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
+import 'package:apc_schedular/features/schedules/model/all_task_model.dart';
 import 'package:apc_schedular/features/schedules/model/categories_model.dart';
 import 'package:apc_schedular/features/schedules/model/reoccuring_activities_model.dart';
 import 'package:apc_schedular/features/schedules/model/schedule_detail_model.dart';
@@ -16,11 +17,12 @@ import 'package:http/http.dart' as http;
 class SchedulesController extends GetxController {
   RxBool loadingCats = RxBool(false);
   var loadedCats = CategoryModel().obs;
+  RxList<String> selectedUserIds = <String>[].obs;
   // var loadedActivities = AllScheduleModel().obs;
   var loadedDetails = ScheduleDetailModel().obs;
   var reoccuringModel = ReoccuringActivitiesModel().obs;
   var loadedActivities = AllActivityInstancesModel().obs;
-
+  var loadedTasks = UserTaskResponseModel().obs;
   RxBool creatingActivity = RxBool(false);
   RxBool createActivityInstance = RxBool(false);
   RxBool loadingAllActivities = RxBool(false);
@@ -30,7 +32,9 @@ class SchedulesController extends GetxController {
   RxBool editingActivityInstance = RxBool(false);
   RxBool deletingActivity = RxBool(false);
   RxBool sendingEmail = RxBool(false);
-    List mails = [];
+  RxBool creatingTask = RxBool(false);
+  List mails = [];
+  RxBool fetchingTasks = RxBool(false);
 
   //REPOSITORIES
   Future getCategoryRepo() async {
@@ -53,6 +57,26 @@ class SchedulesController extends GetxController {
     return response;
   }
 
+  Future createTaskActiviityInstance(instanceId, List userId, note) async {
+    final response = await BaseHttpClient.instance.post(
+      ApiRoutes.createTaskActiviityInstance,
+      body: {
+        "activity_instance_id": instanceId,
+        "user_ids": userId,
+        "status": "Assigned",
+        "notes": note,
+      },
+    );
+    return response;
+  }
+
+  Future getAllTaskRepo() async {
+    final response = await BaseHttpClient.instance.get(
+      ApiRoutes.getTaskAssignments,
+    );
+    return jsonEncode(response);
+  }
+
   Future createActivityInstanceRepo(activityId, startTime, endTime) async {
     final response = await BaseHttpClient().post(
       ApiRoutes.createActivityInstance,
@@ -69,7 +93,7 @@ class SchedulesController extends GetxController {
     final response = await BaseHttpClient.instance.put(
       '${ApiRoutes.createActivityInstance}/$activityId',
       body: {
-        "activity_id": activityId,
+        // "activity_id": activityId,
         "start_time": startTime,
         "end_time": endTime,
       },
@@ -148,25 +172,22 @@ class SchedulesController extends GetxController {
     }
   }
 
-  // Future createActivityController(title, desc, catId, priorityLvl) async {
-  //   try {
-  //     creatingActivity(true);
-  //     var result = await createActivityRepo(title, desc, catId, priorityLvl);
-  //     creatingActivity(false);
-  //     return result;
-  //   } catch (e) {
-  //     creatingActivity(false);
-  //     var err = jsonEncode(e);
-  //     Get.snackbar(
-  //       'OPPSS',
-  //       err,
-  //       snackPosition: SnackPosition.BOTTOM,
-  //       backgroundColor: AppColors.blue,
-  //       colorText: AppColors.whiteColor,
-  //     );
-  //     rethrow;
-  //   }
-  // }
+  Future createTaskController(instanceId, List userId, note) async {
+    try {
+      creatingTask(true);
+      var result = await createTaskActiviityInstance(instanceId, userId, note);
+      creatingTask(false);
+      Get.snackbar(
+        'Error',
+        'Failed to create task',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      creatingTask(false);
+    }
+  }
+
   Future createActivityController(title, desc, catId, priorityLvl) async {
     try {
       creatingActivity(true);
@@ -334,6 +355,17 @@ class SchedulesController extends GetxController {
       sendingEmail(false);
       print(e);
       Get.snackbar('Opps', '$e');
+    }
+  }
+
+  Future getTaskController() async {
+    try {
+      fetchingTasks(true);
+      var result = await getAllTaskRepo();
+      fetchingTasks(false);
+      loadedTasks.value = userTaskResponseModelFromJson(result);
+    } catch (e) {
+      fetchingTasks(false);
     }
   }
 }

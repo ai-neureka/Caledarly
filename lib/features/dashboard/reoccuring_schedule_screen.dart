@@ -295,7 +295,7 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
-                              childAspectRatio: 0.85,
+                              childAspectRatio: 1.2,
                             ),
                         itemBuilder: (context, index) {
                           // First item is the Add button
@@ -423,7 +423,7 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                                     ),
                                     // Content
                                     Padding(
-                                      padding: const EdgeInsets.all(16),
+                                      padding: const EdgeInsets.all(8),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
@@ -450,7 +450,7 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(height: 12),
+                                          const SizedBox(height: 5),
                                           // Title
                                           Text(
                                             item!.title!,
@@ -465,19 +465,17 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                                           ),
                                           const SizedBox(height: 8),
                                           // Description
-                                          Expanded(
-                                            child: Text(
-                                              item.description ?? '',
-                                              style: TextStyle(
-                                                color: Colors.white.withOpacity(
-                                                  0.85,
-                                                ),
-                                                fontSize: 13,
-                                                height: 1.3,
+                                          Text(
+                                            item.description ?? '',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(
+                                                0.85,
                                               ),
-                                              maxLines: 3,
-                                              overflow: TextOverflow.ellipsis,
+                                              fontSize: 13,
+                                              height: 1.3,
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 8),
                                           // Author info

@@ -204,7 +204,7 @@ class _HomePageState extends State<HomePage> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: AppColors.whiteColor.withValues(alpha: 0.6),
+                // color: AppColors.whiteColor.withValues(alpha: 0.6),
               ),
               padding: EdgeInsets.all(16),
               child: Column(
@@ -237,24 +237,10 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                       }
-                      if (controller.loadedActivities.value.data == null ||
-                          controller.loadedActivities.value.data!.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No tasks for today',
-                            style: AppTextStyle().textInter(
-                              size: 16.0,
-                              weight: FontWeight.w600,
-                              color: AppColors.blackColor,
-                            ),
-                          ),
-                        );
-                      }
-                      final todayTasks = _getTodayTasks(
-                        controller.loadedActivities.value.data!,
-                      );
 
-                      if (todayTasks.isEmpty) {
+                      final activities = controller.loadedActivities.value.data;
+
+                      if (activities == null || activities.isEmpty) {
                         return Center(
                           child: Text(
                             'No tasks for today',
@@ -267,28 +253,47 @@ class _HomePageState extends State<HomePage> {
                         );
                       }
 
-                      todayTasks.sort((a, b) {
-                        final dateA =
-                            a.createdAt ??
-                            DateTime.fromMillisecondsSinceEpoch(0);
-                        final dateB =
-                            b.createdAt ??
-                            DateTime.fromMillisecondsSinceEpoch(0);
-                        return dateB.compareTo(dateA);
-                      });
+                      final now = DateTime.now();
 
-                      final task = todayTasks.first;
+                      // ✅ Display all API items in a horizontal scroll
+                      return SizedBox(
+                        height:
+                            180, // adjust height as needed to fit your cards
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: activities.length,
+                          itemBuilder: (context, index) {
+                            final task = activities[index];
+                            final isPast =
+                                task.startTime != null &&
+                                task.startTime!.isBefore(now);
 
-                      return GestureDetector(
-                        onTap: () {
-                          Get.to(
-                            () => ScheduleDetailScreen(
-                              id: task.activityId?.id ?? '',
-                              title: task.activityId?.title ?? '',
-                            ),
-                          );
-                        },
-                        child: _buildTaskItem(task),
+                            return GestureDetector(
+                              onTap: () {
+                                if (!isPast) {
+                                  Get.to(
+                                    () => ScheduleDetailScreen(
+                                      id: task.id ?? '',
+                                      title: task.activityId?.title ?? '',
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: isPast
+                                      ? Colors.grey.withOpacity(0.3)
+                                      : AppColors.whiteColor.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: _buildTaskItem(task),
+                              ),
+                            );
+                          },
+                        ),
                       );
                     },
                   ),
@@ -360,42 +365,28 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.blue.withValues(alpha: 0.3)),
+        // border: Border.all(color: AppColors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
                   task.activityId?.title ?? '',
                   style: AppTextStyle().textInter(
                     size: 22.0,
                     weight: FontWeight.w600,
                     color: AppColors.blackColor,
                   ),
+                  maxLines: 1,
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor(task.activityId!.priorityLevel),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  task.activityId!.priorityLevel ?? '',
-                  style: AppTextStyle().textInter(
-                    size: 16.0,
-                    weight: FontWeight.w500,
-                    color: AppColors.whiteColor,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          if (task.activityId!.description != null &&
+          if (task.activityId?.description != null &&
               task.activityId!.description!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
@@ -426,7 +417,22 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.blackColor,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 30),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getPriorityColor(task.activityId?.priorityLevel),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  task.activityId?.priorityLevel ?? '',
+                  style: AppTextStyle().textInter(
+                    size: 16.0,
+                    weight: FontWeight.w500,
+                    color: AppColors.whiteColor,
+                  ),
+                ),
+              ),
               // Icon(Icons.access_time, size: 20, color: AppColors.blackColor),
               // const SizedBox(width: 4),
               // Text(
