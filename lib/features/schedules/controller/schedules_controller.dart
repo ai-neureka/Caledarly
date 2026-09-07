@@ -178,13 +178,19 @@ class SchedulesController extends GetxController {
       var result = await createTaskActiviityInstance(instanceId, userId, note);
       creatingTask(false);
       Get.snackbar(
+        'Success',
+        'Task created ',
+        backgroundColor: AppColors.blue,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      creatingTask(false);
+      Get.snackbar(
         'Error',
         'Failed to create task',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-    } catch (e) {
-      creatingTask(false);
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/notifications/alarm_manager.dart';
 import 'package:apc_schedular/features/profile/controller/profile_controller.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -47,9 +48,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
       body: Obx(() {
         if (_scheduleController.getting.value ||
             _profileCotroller.loadedProfile.value.data?.user?.id == null) {
-          return Center(
-            child: CircularProgressIndicator(color: AppColors.blue),
-          );
+          return const AppPageShimmer(itemCount: 3);
         }
 
         final userId = _profileCotroller.loadedProfile.value.data?.user?.id;
@@ -62,17 +61,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         final detail = data;
 
         // Check if current user is the creator
-        // Handle both object and string cases for created_by
         String? creatorId;
         if (detail.createdBy is Map || detail.createdBy is Object) {
-          // If created_by is an object, get the _id field
           creatorId = detail.createdBy?.id ?? detail.createdBy?.id;
         } else if (detail.createdBy is String) {
-          // If created_by is a string, use it directly
           creatorId = detail.createdBy as String;
         }
 
-        // Also check activity's created_by
         String? activityCreatorId;
         if (detail.activityId?.createdBy is Map ||
             detail.activityId?.createdBy is Object) {
@@ -123,7 +118,24 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         print('🕐 Current time: $now');
 
         final bool isPast = endTime != null && endTime.isBefore(now);
-        final bool isFutureStart = startTime != null && startTime.isAfter(now);
+
+        // FIXED: Check if start time is in the past OR less than 5 minutes away
+        // Event must start at least 5 minutes from NOW to allow reminders
+        final bool isFutureStart =
+            startTime != null &&
+            startTime.isAfter(now) && // Must be in the future
+            startTime.difference(now).inMinutes >= 5; // At least 5 minutes away
+
+        print('🕐 Alarm Validation:');
+        print('   Current time: $now');
+        print('   Start time: $startTime');
+        if (startTime != null) {
+          print(
+            '   Minutes until start: ${startTime.difference(now).inMinutes}',
+          );
+          print('   Start is after now: ${startTime.isAfter(now)}');
+          print('   isFutureStart (can set alarm): $isFutureStart');
+        }
 
         String formatDateTime(DateTime? dt) {
           if (dt == null) return '';
@@ -172,10 +184,9 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                 IconButton(
                                   tooltip: 'Edit schedule',
                                   icon: Icon(Icons.edit),
-                                  color: AppColors.blue,
+                                  color: AppColors.secondary,
                                   onPressed: () => _showEditBottomSheet(
                                     context,
-
                                     detail,
                                     detail.id ?? '',
                                     startTime,
@@ -189,7 +200,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                 IconButton(
                                   tooltip: 'Delete schedule',
                                   icon: Icon(Icons.delete),
-                                  color: Colors.red,
+                                  color: AppColors.error,
                                   onPressed: () => _showDeleteConfirmation(
                                     context,
                                     detail.id,
@@ -205,21 +216,21 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                       ? (showReminderOptions
                                             ? 'Hide reminders'
                                             : 'Show reminders')
-                                      : 'Reminders available only for future events',
+                                      : 'Reminders available only for future events (at least 5 minutes away)',
                                   icon: Icon(
                                     showReminderOptions
                                         ? Icons.alarm_on
                                         : Icons.alarm_add,
                                   ),
                                   color: isFutureStart
-                                      ? AppColors.blue
+                                      ? AppColors.secondary
                                       : Colors.grey,
                                   onPressed: () {
                                     if (!isFutureStart) {
                                       Get.snackbar(
                                         'Unavailable',
-                                        'You can only set reminders for future events',
-                                        backgroundColor: Colors.orange,
+                                        'You can only set reminders for events starting at least 5 minutes from now',
+                                        backgroundColor: AppColors.accent,
                                         colorText: Colors.white,
                                         snackPosition: SnackPosition.BOTTOM,
                                       );
@@ -304,7 +315,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                               Icon(
                                 Icons.alarm,
                                 size: 24,
-                                color: AppColors.blue,
+                                color: AppColors.secondary,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -343,15 +354,23 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                               nowTz.second,
                             );
 
-                            // Calculate time difference between now and start time
+                            // FIXED: More robust validation
                             final timeUntilStart = startTime.difference(
                               currentTime,
                             );
+                            final timeUntilReminder = reminderTime?.difference(
+                              currentTime,
+                            );
 
-                            // Check if reminder time is valid AND if start time is at least 5 minutes away
+                            // Reminder is valid if:
+                            // 1. Reminder time is in the future
+                            // 2. Reminder time is before start time
+                            // 3. There's at least 1 minute buffer from now
                             final isValidTime =
-                                (reminderTime?.isAfter(currentTime) ?? false) &&
-                                timeUntilStart.inMinutes >= 5;
+                                reminderTime != null &&
+                                timeUntilReminder != null &&
+                                timeUntilReminder.inMinutes >= 1 &&
+                                reminderTime.isBefore(startTime);
 
                             return Opacity(
                               opacity: isValidTime ? 1.0 : 0.5,
@@ -384,15 +403,16 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                         ),
                                       )
                                     : Text(
-                                        timeUntilStart.inMinutes < 5
-                                            ? 'Not available (less than 5 minutes until start)'
+                                        timeUntilStart.inMinutes <
+                                                option.minutes
+                                            ? 'Not available (event starts in less than ${option.minutes} minutes)'
                                             : 'Not available (time has passed)',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.red.shade400,
+                                          color: AppColors.error,
                                         ),
                                       ),
-                                activeColor: AppColors.blue,
+                                activeColor: AppColors.secondary,
                                 contentPadding: EdgeInsets.zero,
                               ),
                             );
@@ -410,15 +430,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                       startTime!,
                                     ),
                               icon: isLoadingReminders
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                  ? const AppShimmer(
+                                      baseColor: Colors.white24,
+                                      child: ShimmerBox(
+                                        height: 18,
+                                        width: 24,
+                                        borderRadius: 4,
+                                        color: Colors.white24,
                                       ),
                                     )
                                   : Icon(Icons.save),
@@ -428,7 +446,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                     : 'Save Reminders',
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.blue,
+                                backgroundColor: AppColors.secondary,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
@@ -448,7 +466,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                 style: AppTextStyle().textInter(
                                   size: 13,
                                   weight: FontWeight.w500,
-                                  color: AppColors.blue,
+                                  color: AppColors.secondary,
                                 ),
                               ),
                             ),
@@ -500,7 +518,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.edit, color: AppColors.blue),
+                      Icon(Icons.edit, color: AppColors.secondary),
                       const SizedBox(width: 8),
                       Text(
                         'Edit Schedule',
@@ -521,7 +539,10 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                   // Start Date
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.calendar_today, color: AppColors.blue),
+                    leading: Icon(
+                      Icons.calendar_today,
+                      color: AppColors.secondary,
+                    ),
                     title: Text('Start Date'),
                     subtitle: Text(
                       DateFormat('d MMM, yyyy').format(selectedStartDate),
@@ -550,7 +571,10 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                   // Start Time
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.access_time, color: AppColors.blue),
+                    leading: Icon(
+                      Icons.access_time,
+                      color: AppColors.secondary,
+                    ),
                     title: Text('Start Time'),
                     subtitle: Text(selectedStartTime.format(context)),
                     onTap: () async {
@@ -578,7 +602,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                   // End Date
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.calendar_today, color: Colors.red),
+                    leading: Icon(Icons.calendar_today, color: AppColors.error),
                     title: Text('End Date'),
                     subtitle: Text(
                       DateFormat('d MMM, yyyy').format(selectedEndDate),
@@ -607,7 +631,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                   // End Time
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.access_time, color: Colors.red),
+                    leading: Icon(Icons.access_time, color: AppColors.error),
                     title: Text('End Time'),
                     subtitle: Text(selectedEndTime.format(context)),
                     onTap: () async {
@@ -647,7 +671,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                   Get.snackbar(
                                     'Invalid Time',
                                     'End time must be after start time',
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: AppColors.error,
                                     colorText: Colors.white,
                                     snackPosition: SnackPosition.BOTTOM,
                                   );
@@ -656,7 +680,6 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
 
                                 await _scheduleController
                                     .editingActivityInstanceController(
-                                      // detail.activityId?.id ?? widget.id,
                                       id,
                                       selectedStartDate.toIso8601String(),
                                       selectedEndDate.toIso8601String(),
@@ -668,7 +691,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                                 );
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.blue,
+                          backgroundColor: AppColors.secondary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -676,14 +699,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           ),
                         ),
                         child: _scheduleController.editingActivityInstance.value
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
+                            ? const AppShimmer(
+                                baseColor: Colors.white24,
+                                child: ShimmerBox(
+                                  height: 18,
+                                  width: 96,
+                                  borderRadius: 4,
+                                  color: Colors.white24,
                                 ),
                               )
                             : Text(
@@ -714,13 +736,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.warning, color: Colors.red),
+              Icon(Icons.warning, color: AppColors.error),
               const SizedBox(width: 8),
               Text('Delete Schedule'),
             ],
           ),
           content: Text(
-            'Are you sure you want to delete ,this schedule? This action cannot be undone.',
+            'Are you sure you want to delete this schedule? This action cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -738,18 +760,17 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                         Navigator.pop(context); // Go back to previous screen
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
                 ),
                 child: _scheduleController.deletingActivity.value
-                    ? SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+                    ? const AppShimmer(
+                        baseColor: Colors.white24,
+                        child: ShimmerBox(
+                          height: 16,
+                          width: 48,
+                          borderRadius: 4,
+                          color: Colors.white24,
                         ),
                       )
                     : Text('Delete'),
@@ -781,7 +802,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
       Get.snackbar(
         'No Reminders Selected',
         'Please select at least one reminder option',
-        backgroundColor: Colors.orange,
+        backgroundColor: AppColors.accent,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -793,38 +814,43 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     });
 
     try {
+      // FIXED: Better initialization handling
       try {
         tz.TZDateTime.now(tz.local);
         print('✅ Timezone already initialized');
       } catch (e) {
         print('⚠️ Timezone not initialized, initializing now...');
-        try {
-          tz.initializeTimeZones();
-          tz.setLocalLocation(tz.getLocation('Africa/Lagos'));
-          print('✅ Timezone initialized successfully');
-        } catch (tzError) {
-          print('❌ Failed to initialize timezone: $tzError');
-        }
+        tz.initializeTimeZones();
+        tz.setLocalLocation(tz.getLocation('Africa/Lagos'));
+        print('✅ Timezone initialized successfully');
       }
 
-      await AlarmManager.initialize();
+      // FIXED: Initialize AlarmManager with better error handling
+      try {
+        await AlarmManager.initialize();
+        print('✅ AlarmManager initialized');
+      } catch (e) {
+        print('❌ AlarmManager initialization failed: $e');
+        throw Exception('Failed to initialize alarm system: $e');
+      }
 
       final hasPermissions = await AlarmManager.requestAlarmPermissions();
       if (!hasPermissions) {
+        setState(() {
+          isLoadingReminders = false;
+        });
         Get.snackbar(
           'Permissions Required',
           'Please grant notification and alarm permissions to set reminders',
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
           duration: Duration(seconds: 4),
         );
-        setState(() {
-          isLoadingReminders = false;
-        });
         return;
       }
 
+      // Cancel existing reminders for this schedule
       await AlarmManager.cancelRemindersForSchedule(widget.id);
 
       int reminderIndex = 0;
@@ -843,47 +869,53 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
       for (final option in selectedReminders) {
         final reminderTime = _calculateReminderTime(startTime, option);
 
-        if (reminderTime != null && reminderTime.isAfter(now)) {
-          final tzReminderTime = tz.TZDateTime(
-            tz.local,
-            reminderTime.year,
-            reminderTime.month,
-            reminderTime.day,
-            reminderTime.hour,
-            reminderTime.minute,
-            reminderTime.second,
-          );
+        // FIXED: Add buffer time check
+        if (reminderTime != null &&
+            reminderTime.isAfter(now.add(Duration(minutes: 1)))) {
+          try {
+            final tzReminderTime = tz.TZDateTime(
+              tz.local,
+              reminderTime.year,
+              reminderTime.month,
+              reminderTime.day,
+              reminderTime.hour,
+              reminderTime.minute,
+              reminderTime.second,
+            );
 
-          final tzStartTime = tz.TZDateTime(
-            tz.local,
-            startTime.year,
-            startTime.month,
-            startTime.day,
-            startTime.hour,
-            startTime.minute,
-            startTime.second,
-          );
+            final tzStartTime = tz.TZDateTime(
+              tz.local,
+              startTime.year,
+              startTime.month,
+              startTime.day,
+              startTime.hour,
+              startTime.minute,
+              startTime.second,
+            );
 
-          print('📅 Scheduling reminder:');
-          print('   Option: ${option.label}');
-          print('   Reminder time (local): $reminderTime');
-          print('   TZ Reminder time: $tzReminderTime');
-          print('   Start time (local): $startTime');
-          print('   TZ Start time: $tzStartTime');
+            print('📅 Scheduling reminder:');
+            print('   Option: ${option.label}');
+            print('   Reminder time: $tzReminderTime');
+            print('   Start time: $tzStartTime');
 
-          await AlarmManager.scheduleReminderWithAlarm(
-            widget.id,
-            title,
-            tzReminderTime,
-            tzStartTime,
-            option.label,
-            reminderIndex,
-          );
+            await AlarmManager.scheduleReminderWithAlarm(
+              widget.id,
+              title,
+              tzReminderTime,
+              tzStartTime,
+              option.label,
+              reminderIndex,
+            );
 
-          successCount++;
-          reminderIndex++;
+            successCount++;
+            reminderIndex++;
+            print('✅ Reminder scheduled successfully');
+          } catch (e) {
+            print('❌ Failed to schedule reminder for ${option.label}: $e');
+            // Continue with other reminders even if one fails
+          }
         } else {
-          print('⚠️ Skipping ${option.label} - time has passed');
+          print('⚠️ Skipping ${option.label} - time has passed or too soon');
         }
       }
 
@@ -891,14 +923,15 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
         isLoadingReminders = false;
         if (successCount > 0) {
           showReminderOptions = false;
+          selectedReminders.clear();
         }
       });
 
       if (successCount > 0) {
         Get.snackbar(
-          'Reminders Set Successfully',
-          '$successCount reminder(s) scheduled for "$title"',
-          backgroundColor: Colors.green,
+          'Success',
+          '$successCount reminder(s) set for "$title"',
+          backgroundColor: AppColors.success,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
           duration: Duration(seconds: 3),
@@ -906,22 +939,24 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
       } else {
         Get.snackbar(
           'No Valid Reminders',
-          'All selected reminder times have passed',
-          backgroundColor: Colors.orange,
+          'All selected reminder times have passed or are too soon',
+          backgroundColor: AppColors.accent,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
         isLoadingReminders = false;
       });
 
       print('❌ Error saving reminders: $e');
+      print('Stack trace: $stackTrace');
+
       Get.snackbar(
         'Error',
-        'Failed to set reminders: $e',
-        backgroundColor: Colors.red,
+        'Failed to set reminders. Please try again.',
+        backgroundColor: AppColors.error,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
         duration: Duration(seconds: 4),
@@ -945,6 +980,22 @@ extension ReminderOptionExtension on ReminderOption {
         return '1 hour before';
       case ReminderOption.oneDay:
         return '1 day before';
+    }
+  }
+
+  // Helper to get the duration in minutes for validation
+  int get minutes {
+    switch (this) {
+      case ReminderOption.fiveMinutes:
+        return 5;
+      case ReminderOption.tenMinutes:
+        return 10;
+      case ReminderOption.thirtyMinutes:
+        return 30;
+      case ReminderOption.oneHour:
+        return 60;
+      case ReminderOption.oneDay:
+        return 1440; // 24 hours
     }
   }
 }

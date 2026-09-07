@@ -275,19 +275,6 @@ class AlarmManager {
           await Permission.ignoreBatteryOptimizations.status;
 
       if (!batteryOptimizationStatus.isGranted) {
-        print("⚠️ Battery optimization is enabled - this may prevent alarms!");
-
-        // Get.snackbar(
-        //   "Battery Optimization Detected",
-        //   "Tap here to disable battery optimization for reliable alarms",
-        //   backgroundColor: Colors.orange,
-        //   colorText: Colors.white,
-        //   duration: Duration(seconds: 6),
-        //   snackPosition: SnackPosition.TOP,
-        //   onTap: (_) async {
-        //     await Permission.ignoreBatteryOptimizations.request();
-        //   },
-        // );
       } else {
         print("✅ Battery optimization is disabled - alarms will work reliably");
       }
@@ -441,8 +428,8 @@ class AlarmManager {
           'notificationId': notificationId,
         }),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        // uiLocalNotificationDateInterpretation:
+        //     UILocalNotificationDateInterpretation.absoluteTime,
       );
 
       print("✅ Reminder scheduled successfully!");
@@ -456,74 +443,133 @@ class AlarmManager {
 
   // Verify that notification was actually scheduled
   static Future<void> _verifyNotificationScheduled(int notificationId) async {
-    final List<PendingNotificationRequest> pendingNotifications =
-        await flutterLocalNotificationsPlugin.pendingNotificationRequests();
+    try {
+      final List<PendingNotificationRequest> pendingNotifications =
+          await flutterLocalNotificationsPlugin.pendingNotificationRequests();
 
-    print("📋 Total pending notifications: ${pendingNotifications.length}");
+      print("📋 Total pending notifications: ${pendingNotifications.length}");
 
-    final isScheduled = pendingNotifications.any((n) => n.id == notificationId);
-    print("✓ Notification verified in pending list: $isScheduled");
-
-    if (!isScheduled) {
-      print("⚠️ WARNING: Notification was not properly scheduled!");
-      print(
-        "⚠️ This might be due to battery optimization or system restrictions",
-      );
-    } else {
-      // Find and print details
-      final notification = pendingNotifications.firstWhere(
+      final isScheduled = pendingNotifications.any(
         (n) => n.id == notificationId,
       );
-      print("📝 Scheduled notification details:");
-      print("   Title: ${notification.title}");
-      print("   Body: ${notification.body}");
+      print("✓ Notification verified in pending list: $isScheduled");
+
+      if (!isScheduled) {
+        print("⚠️ WARNING: Notification was not properly scheduled!");
+        print(
+          "⚠️ This might be due to battery optimization or system restrictions",
+        );
+      } else {
+        // Find and print details
+        final notification = pendingNotifications.firstWhere(
+          (n) => n.id == notificationId,
+        );
+        print("📝 Scheduled notification details:");
+        print("   Title: ${notification.title}");
+        print("   Body: ${notification.body}");
+      }
+    } catch (e) {
+      print("❌ Error verifying notification: $e");
+      print("⚠️ Could not verify notification was scheduled");
     }
   }
 
   // Cancel all reminders for a specific schedule
   static Future<void> cancelRemindersForSchedule(String scheduleId) async {
-    final pendingNotifications = await flutterLocalNotificationsPlugin
-        .pendingNotificationRequests();
+    try {
+      final pendingNotifications = await flutterLocalNotificationsPlugin
+          .pendingNotificationRequests();
 
-    int canceledCount = 0;
-    for (final notification in pendingNotifications) {
-      if (notification.payload != null) {
-        try {
-          final data = jsonDecode(notification.payload!);
-          if (data['scheduleId'] == scheduleId) {
-            await flutterLocalNotificationsPlugin.cancel(notification.id);
-            canceledCount++;
-            print("✅ Cancelled notification: ${notification.id}");
+      int canceledCount = 0;
+      for (final notification in pendingNotifications) {
+        if (notification.payload != null) {
+          try {
+            final data = jsonDecode(notification.payload!);
+            if (data['scheduleId'] == scheduleId) {
+              await flutterLocalNotificationsPlugin.cancel(notification.id);
+              canceledCount++;
+              print("✅ Cancelled notification: ${notification.id}");
+            }
+          } catch (e) {
+            print("❌ Error checking notification payload: $e");
           }
-        } catch (e) {
-          print("❌ Error checking notification payload: $e");
         }
       }
-    }
 
-    if (canceledCount > 0) {
+      if (canceledCount > 0) {
+        print(
+          "📝 Cancelled $canceledCount reminder(s) for schedule: $scheduleId",
+        );
+      }
+    } catch (e) {
+      print("❌ Error fetching pending notifications: $e");
       print(
-        "📝 Cancelled $canceledCount reminder(s) for schedule: $scheduleId",
+        "⚠️ Attempting to clear all notifications to fix corrupted state...",
+      );
+
+      // If we can't get pending notifications, cancel all as a recovery mechanism
+      try {
+        await flutterLocalNotificationsPlugin.cancelAll();
+        print("✅ All notifications cleared to recover from corrupted state");
+      } catch (clearError) {
+        print("❌ Failed to clear notifications: $clearError");
+      }
+    }
+  }
+
+  static Future<void> clearCorruptedNotifications() async {
+    print('🔧 Attempting to clear corrupted notification state...');
+    try {
+      // Try to cancel all notifications
+      await flutterLocalNotificationsPlugin.cancelAll();
+      print('✅ Successfully cleared all notifications');
+
+      // Reinitialize
+      await forceReinitialize();
+      print('✅ AlarmManager reinitialized');
+
+      Get.snackbar(
+        "Notifications Reset",
+        "Notification system has been reset. Please reschedule your reminders.",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      print('❌ Error clearing corrupted notifications: $e');
+      Get.snackbar(
+        "Error",
+        "Failed to reset notifications. Try restarting the app.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+        snackPosition: SnackPosition.TOP,
       );
     }
   }
 
   // Get all pending notifications for debugging
   static Future<void> debugPendingNotifications() async {
-    final List<PendingNotificationRequest> pendingNotifications =
-        await flutterLocalNotificationsPlugin.pendingNotificationRequests();
+    try {
+      final List<PendingNotificationRequest> pendingNotifications =
+          await flutterLocalNotificationsPlugin.pendingNotificationRequests();
 
-    print("📋 === PENDING NOTIFICATIONS ===");
-    print("Total: ${pendingNotifications.length}");
+      print("📋 === PENDING NOTIFICATIONS ===");
+      print("Total: ${pendingNotifications.length}");
 
-    for (final notification in pendingNotifications) {
-      print("---");
-      print("ID: ${notification.id}");
-      print("Title: ${notification.title}");
-      print("Body: ${notification.body}");
-      print("Payload: ${notification.payload}");
+      for (final notification in pendingNotifications) {
+        print("---");
+        print("ID: ${notification.id}");
+        print("Title: ${notification.title}");
+        print("Body: ${notification.body}");
+        print("Payload: ${notification.payload}");
+      }
+      print("================================");
+    } catch (e) {
+      print("❌ Error getting pending notifications: $e");
+      print("⚠️ Notification system may be in corrupted state");
     }
-    print("================================");
   }
 
   // Test notification (schedules in 10 seconds)

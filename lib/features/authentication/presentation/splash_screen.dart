@@ -1,4 +1,5 @@
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:apc_schedular/features/authentication/presentation/onboarding_screen.dart';
 import 'package:apc_schedular/features/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
@@ -40,17 +41,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blue,
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: 130,
-              width: 130,
-              child: Image.asset('assets/images/apc1.png'),
+            Container(
+              height: 136,
+              width: 136,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [AppColors.softShadow],
+              ),
+              child: Image.asset('assets/images/logo.jpeg'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 18),
+            const AppShimmer(
+              child: ShimmerBox(height: 8, width: 86, borderRadius: 4),
+            ),
           ],
         ),
       ),

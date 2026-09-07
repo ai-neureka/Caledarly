@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
-
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -196,8 +195,9 @@ Future<void> scheduleReminderWithAlarm(
         'type': 'reminder',
       }),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+
+      // uiLocalNotificationDateInterpretation:
+      //     UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print("✅ Reminder scheduled successfully!");
@@ -254,8 +254,8 @@ Future<void> scheduleTestAlarm() async {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      // uiLocalNotificationDateInterpretation:
+      //     UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print("✅ Test alarm scheduled! Wait 10 seconds...");
@@ -354,8 +354,8 @@ Future<void> _snoozeReminder(Map<String, dynamic> payload, int minutes) async {
       ),
       payload: jsonEncode(payload),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      // uiLocalNotificationDateInterpretation:
+      //     UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     Get.snackbar(

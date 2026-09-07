@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.apc_schedular"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -40,5 +40,5 @@ flutter {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.25")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // ✅ KTS style
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") // ✅ KTS style
 }

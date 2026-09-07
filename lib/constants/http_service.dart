@@ -249,7 +249,9 @@ class BaseHttpClient {
 
       case 404:
         throw ApiException(
-          'Resource not found.',
+          body is Map && body['message'] != null
+              ? body['message']
+              : 'Resource not found.',
           statusCode: statusCode,
           data: body,
         );

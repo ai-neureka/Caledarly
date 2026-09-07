@@ -35,19 +35,19 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background gradient
           Container(
             decoration: BoxDecoration(
-              color: AppColors.whiteColor,
+              color: AppColors.background,
               // gradient: LinearGradient(
               //   begin: Alignment.topLeft,
               //   end: Alignment.bottomRight,
               //   colors: [
               //     Colors.white,
-              //     const Color(0xFF5F57FF).withOpacity(0.9),
+              //     const AppColors.primary.withOpacity(0.9),
               //   ],
               // ),
             ),
@@ -66,7 +66,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                       child: Text(
                         _currentPage == 2 ? "" : "Skip",
                         style: TextStyle(
-                          color: AppColors.blackColor,
+                          color: AppColors.secondaryText,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -88,20 +88,20 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                     children: [
                       _buildModernPage(
                         0,
-                        "Plan Your Day/week",
-                        "Create schedules. Organize tasks by priority and never miss what matters.",
+                        "Coordinate Community Work",
+                        "Plan outreach, meetings, and assigned tasks with clarity and care.",
                         Icons.event_note_rounded,
                       ),
                       _buildModernPage(
                         1,
-                        "Stay Productive",
-                        "Track your progresss. See what you've accomplished at a glance.",
+                        "Keep Everyone Aligned",
+                        "See what is due, who is involved, and where attention is needed.",
                         Icons.insights_rounded,
                       ),
                       _buildModernPage(
                         2,
-                        "Achieve More",
-                        "Let's get started on your journey to productivity and organization!",
+                        "Make Impact Visible",
+                        "Turn reliable scheduling into better follow-through for your team.",
                         Icons.emoji_events_rounded,
                       ),
                     ],
@@ -122,8 +122,8 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                         width: _currentPage == index ? 24 : 8,
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? const Color(0xFF5F57FF)
-                              : AppColors.blue.withOpacity(0.3),
+                              ? AppColors.secondary
+                              : AppColors.border,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -149,13 +149,12 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5F57FF),
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        elevation: 8,
-                        shadowColor: const Color(0xFF5F57FF).withOpacity(0.5),
+                        elevation: 0,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -210,8 +209,8 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          const Color(0xFF5F57FF).withOpacity(0.3),
-                          Colors.transparent,
+                          AppColors.secondary.withValues(alpha: 0.12),
+                          AppColors.accent.withValues(alpha: 0.08),
                         ],
                       ),
                     ),
@@ -220,17 +219,12 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                         width: 200,
                         height: 200,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF5F57FF),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF5F57FF).withOpacity(0.5),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                          ],
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(color: AppColors.border),
+                          boxShadow: [AppColors.softShadow],
                         ),
-                        child: Icon(icon, size: 100, color: Colors.white),
+                        child: Icon(icon, size: 96, color: AppColors.primary),
                       ),
                     ),
                   ),
@@ -244,7 +238,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                     style: AppTextStyle().textInter(
                       size: 32,
                       weight: FontWeight.bold,
-                      color: AppColors.blue,
+                      color: AppColors.primary,
                     ),
                   ),
 
@@ -257,7 +251,7 @@ class _ModernOnboardingScreenState extends State<ModernOnboardingScreen>
                     style: AppTextStyle().textInter(
                       size: 16,
                       weight: FontWeight.w500,
-                      color: AppColors.blue,
+                      color: AppColors.secondaryText,
                     ),
                   ),
                 ],

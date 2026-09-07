@@ -4,6 +4,7 @@ import 'package:apc_schedular/features/profile/controller/profile_controller.dar
 import 'package:apc_schedular/features/profile/model/profile_model.dart';
 import 'package:apc_schedular/features/profile/presentation/reset_password.dart';
 import 'package:apc_schedular/features/widget/custom_button.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -22,10 +23,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.whiteColor,
+      backgroundColor: AppColors.background,
       body: Obx(
         () => _profileController.loadProfile.value
-            ? const Center(child: CircularProgressIndicator())
+            ? const AppPageShimmer(itemCount: 3)
             : SizedBox(
                 child: SafeArea(
                   child: Padding(
@@ -54,14 +55,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         CircleAvatar(
           radius: 45,
-          backgroundColor: Colors.blue.withOpacity(0.3),
-          child: const Icon(Icons.person, size: 50, color: Colors.white),
+          backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
+          child: const Icon(Icons.person, size: 50, color: AppColors.secondary),
         ),
         const SizedBox(height: 16),
         const Text(
           "Profile",
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.primaryText,
             fontSize: 26,
             fontWeight: FontWeight.bold,
           ),
@@ -75,15 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [AppColors.softShadow],
       ),
       child: Column(
         children: [
@@ -125,19 +121,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xff7F7FD5), Color(0xff86A8E7)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.blue.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        color: AppColors.secondary,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
                         child: Text(
@@ -145,8 +130,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            letterSpacing: 0.5,
+                            fontSize: 16,
+                            letterSpacing: 0,
                           ),
                         ),
                       ),
@@ -175,18 +160,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.blue),
+        prefixIcon: Icon(icon, color: AppColors.secondary),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white,
-        labelStyle: const TextStyle(color: AppColors.blue),
+        labelStyle: const TextStyle(color: AppColors.secondaryText),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: AppColors.blue.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: AppColors.blue, width: 2),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.secondary, width: 1.6),
         ),
       ),
     );

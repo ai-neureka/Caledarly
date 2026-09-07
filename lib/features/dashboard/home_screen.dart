@@ -1,98 +1,86 @@
+import 'dart:convert';
+
 import 'package:apc_schedular/constants/app_colors.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
-import 'package:apc_schedular/features/schedules/model/all_activitie.dart';
 import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
 import 'package:apc_schedular/features/schedules/presentation/schedule_detail_screen.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:flutter/material.dart';
-
-import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final PageController _newsPageController = PageController();
-  List<NewsArticle> newsArticles = [];
-  bool loadingNews = true;
-  final _schedulesController = Get.put(SchedulesController());
+  final _newsController = PageController();
+  final _schedules = Get.put(SchedulesController());
+  List<NewsArticle> _articles = [];
+  bool _loadingNews = true;
+
   @override
   void initState() {
     super.initState();
-
-    _schedulesController.getAllUserActivitiesController();
-
-    _fetchNigerianNews();
+    _schedules.getAllUserActivitiesController();
+    _fetchNews();
   }
 
   @override
   void dispose() {
-    _newsPageController.dispose();
+    _newsController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchNigerianNews() async {
+  Future<void> _fetchNews() async {
     try {
-      // Get your free API key from https://newsapi.org/register
-      const apiKey = '609730647a374a8bb2c9e816dc7621f7';
-
+      const key = '609730647a374a8bb2c9e816dc7621f7';
       final response = await http.get(
         Uri.parse(
-          'https://newsapi.org/v2/top-headlines?country=us&apiKey=$apiKey',
+          'https://newsapi.org/v2/top-headlines?country=us&apiKey=$key',
         ),
       );
-
+      if (!mounted) return;
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          newsArticles = (data['articles'] as List)
-              .take(10)
-              .map((article) => NewsArticle.fromJson(article))
-              .toList();
-          loadingNews = false;
-        });
-      } else {
-        print('Error: ${response.statusCode}');
-        setState(() => loadingNews = false);
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        _articles = (data['articles'] as List<dynamic>)
+            .take(10)
+            .map((item) => NewsArticle.fromJson(item))
+            .toList();
       }
-    } catch (e) {
-      setState(() => loadingNews = false);
-      print('Error fetching news: $e');
+    } catch (_) {
+      // A quiet empty state keeps the dashboard useful while offline.
     }
+    if (mounted) setState(() => _loadingNews = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
     return Scaffold(
-      backgroundColor: AppColors.whiteColor,
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.whiteColor.withValues(alpha: 0.2),
-                AppColors.blackColor.withValues(alpha: 0.1),
-              ],
-            ),
-          ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(children: [_buildTabButton("Today", 0)]),
-              ),
-              Expanded(child: _buildTodayPage(context)),
+              _header(now),
+              const SizedBox(height: 24),
+              _overview(now),
+              const SizedBox(height: 28),
+              _sectionTitle("Today's schedule", 'View all'),
+              const SizedBox(height: 14),
+              _activities(now),
+              const SizedBox(height: 28),
+              _sectionTitle('Headlines', 'Latest updates'),
+              const SizedBox(height: 14),
+              _news(),
             ],
           ),
         ),
@@ -100,503 +88,390 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTabButton(String text, int index) {
-    return GestureDetector(
-      child: Container(
-        decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   begin: Alignment.bottomCenter,
-          //   end: Alignment.topRight,
-          //   tileMode: TileMode.mirror,
-          //   colors: [AppColors.blackColor, Color(0xFFFFFFFF)],
-          // ),
-          borderRadius: BorderRadius.circular(60),
-          color: AppColors.blackColor,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Text(
-          text,
-          style: AppTextStyle().textInter(
-            size: 14.0,
-            weight: FontWeight.w400,
-            color: AppColors.whiteColor,
-          ),
+  Widget _header(DateTime now) => Row(
+    children: [
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _greeting(now),
+              style: _text(14, FontWeight.w600, AppColors.secondaryText),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              DateFormat('EEEE, d MMMM').format(now),
+              style: _text(24, FontWeight.w700, AppColors.primaryText),
+            ),
+          ],
         ),
       ),
+      Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.notifications_none_rounded,
+          color: AppColors.primaryText,
+        ),
+      ),
+    ],
+  );
+
+  Widget _overview(DateTime now) => Obx(() {
+    if (_schedules.loadingAllActivities.value) {
+      return AppShimmer(
+        baseColor: AppColors.primary.withValues(alpha: .82),
+        child: const ShimmerBox(
+          height: 154,
+          borderRadius: 8,
+          color: AppColors.primary,
+        ),
+      );
+    }
+    final activities = _today(
+      _schedules.loadedActivities.value.data ?? [],
+      now,
     );
-  }
-
-  Widget _buildTodayPage(BuildContext context) {
-    final now = DateTime.now();
-    final currentDay = DateFormat('EEEE').format(now);
-    final currentDate = DateFormat('dd.MM').format(now);
-    final currentMonth = DateFormat('MMM').format(now);
-    final currentTime = DateFormat('hh:mma').format(now);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    final completed = activities
+        .where((item) => item.startTime!.isBefore(now))
+        .length;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [AppColors.softShadow],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text(
-          //   currentDay,
-          //   style: AppTextStyle().textInter(
-          //     size: 16.0,
-          //     weight: FontWeight.w600,
-          //     color: AppColors.blackColor,
-          //   ),
-          // ),
-          const SizedBox(height: 10),
+          Text(
+            'TODAY AT A GLANCE',
+            style: _text(
+              11,
+              FontWeight.w700,
+              AppColors.whiteColor.withValues(alpha: .72),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${activities.length} ${activities.length == 1 ? 'activity' : 'activities'} planned',
+            style: _text(23, FontWeight.w700, AppColors.whiteColor),
+          ),
+          const SizedBox(height: 18),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentDate,
-                    style: AppTextStyle().textInter(
-                      size: 60.0,
-                      weight: FontWeight.w900,
-                      color: AppColors.blackColor,
-                    ),
-                  ),
-                  Text(
-                    currentMonth,
-                    style: AppTextStyle().textInter(
-                      size: 60.0,
-                      weight: FontWeight.w900,
-                      color: AppColors.blackColor,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                height: MediaQuery.of(context).size.height * 0.1,
-                width: 1,
-                color: AppColors.blackColor,
-              ),
-              Column(
-                children: [
-                  Text(
-                    currentTime,
-                    style: AppTextStyle().textInter(
-                      size: 16.0,
-                      weight: FontWeight.w500,
-                      color: AppColors.blackColor,
-                    ),
-                  ),
-                  Text(
-                    'Nigeria',
-                    style: AppTextStyle().textInter(
-                      size: 16.0,
-                      weight: FontWeight.w500,
-                      color: AppColors.blackColor,
-                    ),
-                  ),
-                ],
-              ),
+              _metric('$completed', 'completed'),
+              Container(height: 28, width: 1, color: Colors.white24),
+              const SizedBox(width: 18),
+              _metric('${activities.length - completed}', 'remaining'),
             ],
           ),
-          const SizedBox(height: 30),
-          // Tasks Section
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                // color: AppColors.whiteColor.withValues(alpha: 0.6),
+        ],
+      ),
+    );
+  });
+
+  Widget _metric(String value, String label) => Padding(
+    padding: const EdgeInsets.only(right: 18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: _text(18, FontWeight.w700, AppColors.whiteColor)),
+        Text(
+          label,
+          style: _text(
+            12,
+            FontWeight.w400,
+            AppColors.whiteColor.withValues(alpha: .68),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _sectionTitle(String title, String action) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          title,
+          style: _text(18, FontWeight.w700, AppColors.primaryText),
+        ),
+      ),
+      Text(action, style: _text(12, FontWeight.w600, AppColors.secondary)),
+    ],
+  );
+
+  Widget _activities(DateTime now) => GetX<SchedulesController>(
+    builder: (controller) {
+      if (controller.loadingAllActivities.value)
+        return const _ActivitiesShimmer();
+      final activities = _today(
+        controller.loadedActivities.value.data ?? [],
+        now,
+      )..sort((a, b) => a.startTime!.compareTo(b.startTime!));
+      if (activities.isEmpty)
+        return _empty(
+          'No activities scheduled for today.',
+          Icons.event_available_outlined,
+        );
+      return SizedBox(
+        height: 164,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: activities.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (_, index) => _activityCard(activities[index], now),
+        ),
+      );
+    },
+  );
+
+  Widget _activityCard(ScheduleDatum item, DateTime now) {
+    final past = item.startTime!.isBefore(now);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Get.to(
+        () => ScheduleDetailScreen(
+          id: item.id ?? '',
+          title: item.activityId?.title ?? '',
+        ),
+      ),
+      child: Container(
+        width: 244,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _priority(item.activityId?.priorityLevel),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('h:mm a').format(item.startTime!),
+                  style: _text(
+                    12,
+                    FontWeight.w600,
+                    past ? AppColors.secondaryText : AppColors.secondary,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              item.activityId?.title ?? 'Untitled activity',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: _text(
+                16,
+                FontWeight.w700,
+                past ? AppColors.secondaryText : AppColors.primaryText,
               ),
-              padding: EdgeInsets.all(16),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              item.activityId?.description?.isNotEmpty == true
+                  ? item.activityId!.description!
+                  : item.activityId?.priorityLevel ?? 'Scheduled',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _text(12, FontWeight.w400, AppColors.secondaryText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _news() {
+    if (_loadingNews)
+      return const AppShimmer(child: ShimmerBox(height: 184, borderRadius: 8));
+    if (_articles.isEmpty)
+      return _empty(
+        'No headlines available right now.',
+        Icons.newspaper_outlined,
+      );
+    return SizedBox(
+      height: 184,
+      child: PageView.builder(
+        controller: _newsController,
+        itemCount: _articles.length,
+        itemBuilder: (_, index) => _newsCard(_articles[index]),
+      ),
+    );
+  }
+
+  Widget _newsCard(NewsArticle item) => InkWell(
+    borderRadius: BorderRadius.circular(8),
+    onTap: () => _openArticle(item.url),
+    child: Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 128,
+            height: double.infinity,
+            child: item.imageUrl == null
+                ? _newsFallback()
+                : Image.network(
+                    item.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _newsFallback(),
+                  ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Today's Activities",
-                        style: AppTextStyle().textInter(
-                          size: 16.0,
-                          weight: FontWeight.w600,
-                          color: AppColors.blackColor,
-                        ),
-                      ),
-                      Text(
-                        "You have ${(_schedulesController.loadedActivities.value.data?.length ?? '..')}"
-                            .toString(),
-                      ),
-                    ],
+                  Text(
+                    item.source.toUpperCase(),
+                    style: _text(10, FontWeight.w700, AppColors.secondary),
                   ),
-                  const SizedBox(height: 10),
-                  GetX<SchedulesController>(
-                    builder: (controller) {
-                      if (controller.loadingAllActivities.value) {
-                        return Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.blackColor,
-                          ),
-                        );
-                      }
-
-                      final activities = controller.loadedActivities.value.data;
-
-                      if (activities == null || activities.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No tasks for today',
-                            style: AppTextStyle().textInter(
-                              size: 16.0,
-                              weight: FontWeight.w600,
-                              color: AppColors.blackColor,
-                            ),
-                          ),
-                        );
-                      }
-
-                      final now = DateTime.now();
-
-                      // ✅ Display all API items in a horizontal scroll
-                      return SizedBox(
-                        height:
-                            180, // adjust height as needed to fit your cards
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: activities.length,
-                          itemBuilder: (context, index) {
-                            final task = activities[index];
-                            final isPast =
-                                task.startTime != null &&
-                                task.startTime!.isBefore(now);
-
-                            return GestureDetector(
-                              onTap: () {
-                                if (!isPast) {
-                                  Get.to(
-                                    () => ScheduleDetailScreen(
-                                      id: task.id ?? '',
-                                      title: task.activityId?.title ?? '',
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 12),
-                                decoration: BoxDecoration(
-                                  color: isPast
-                                      ? Colors.grey.withOpacity(0.3)
-                                      : AppColors.whiteColor.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: _buildTaskItem(task),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // News Section
-          Text(
-            "News",
-            style: AppTextStyle().textInter(
-              size: 16.0,
-              weight: FontWeight.w600,
-              color: AppColors.blackColor,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 170,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              color: AppColors.whiteColor.withValues(alpha: 0.6),
-            ),
-            child: loadingNews
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.whiteColor,
-                    ),
-                  )
-                : newsArticles.isEmpty
-                ? Center(
+                  const SizedBox(height: 8),
+                  Expanded(
                     child: Text(
-                      'No news available',
-                      style: AppTextStyle().textInter(
-                        size: 14.0,
-                        weight: FontWeight.w500,
-                        color: AppColors.blackColor,
-                      ),
-                    ),
-                  )
-                : _buildNewsCarousel(),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  List<ScheduleDatum> _getTodayTasks(List<ScheduleDatum> allTasks) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    return allTasks.where((task) {
-      if (task.createdAt == null) return false;
-      final taskDate = DateTime(
-        task.createdAt!.year,
-        task.createdAt!.month,
-        task.createdAt!.day,
-      );
-      return taskDate.isAtSameMomentAs(today);
-    }).toList();
-  }
-
-  Widget _buildTaskItem(ScheduleDatum task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(12),
-        // border: Border.all(color: AppColors.blue.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  task.activityId?.title ?? '',
-                  style: AppTextStyle().textInter(
-                    size: 22.0,
-                    weight: FontWeight.w600,
-                    color: AppColors.blackColor,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-          if (task.activityId?.description != null &&
-              task.activityId!.description!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              task.activityId!.description!,
-              style: AppTextStyle().textInter(
-                size: 12.0,
-                weight: FontWeight.w400,
-                color: AppColors.blackColor.withValues(alpha: 0.7),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(
-                Icons.timelapse_sharp,
-                size: 20,
-                color: AppColors.blackColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                DateFormat('hh:mm a').format(task.startTime!),
-                style: AppTextStyle().textInter(
-                  size: 18.0,
-                  weight: FontWeight.w600,
-                  color: AppColors.blackColor,
-                ),
-              ),
-              SizedBox(width: 30),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor(task.activityId?.priorityLevel),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  task.activityId?.priorityLevel ?? '',
-                  style: AppTextStyle().textInter(
-                    size: 16.0,
-                    weight: FontWeight.w500,
-                    color: AppColors.whiteColor,
-                  ),
-                ),
-              ),
-              // Icon(Icons.access_time, size: 20, color: AppColors.blackColor),
-              // const SizedBox(width: 4),
-              // Text(
-              //   '${task.duration ?? 0} min',
-              //   style: AppTextStyle().textInter(
-              //     size: 20,
-              //     weight: FontWeight.w800,
-              //     color: AppColors.blackColor,
-              //   ),
-              // ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getPriorityColor(String? priority) {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return AppColors.blue;
-    }
-  }
-
-  Widget _buildNewsCarousel() {
-    return PageView.builder(
-      onPageChanged: (index) {
-        Future.delayed(const Duration(seconds: 4), () {
-          if (!_newsPageController.hasClients || newsArticles.isEmpty) return;
-          final next = (index + 1) % newsArticles.length;
-          _newsPageController.animateToPage(
-            next,
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOut,
-          );
-        });
-      },
-      controller: _newsPageController,
-      scrollDirection: Axis.horizontal,
-      itemCount: newsArticles.length,
-
-      itemBuilder: (context, index) {
-        final article = newsArticles[index];
-        return GestureDetector(
-          onTap: () => _openNewsArticle(article.url),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 1.0),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 1),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: AppColors.whiteColor,
-              ),
-              child: Stack(
-                children: [
-                  if (article.imageUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        article.imageUrl!,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppColors.blue.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: AppColors.blue,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.8),
-                        ],
-                      ),
+                      item.title,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: _text(15, FontWeight.w700, AppColors.primaryText),
                     ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            article.title,
-                            style: AppTextStyle().textInter(
-                              size: 14.0,
-                              weight: FontWeight.w600,
-                              color: AppColors.whiteColor,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            article.source,
-                            style: AppTextStyle().textInter(
-                              size: 11.0,
-                              weight: FontWeight.w400,
-                              color: AppColors.whiteColor.withValues(
-                                alpha: 0.8,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  const Icon(
+                    Icons.arrow_outward_rounded,
+                    size: 18,
+                    color: AppColors.secondary,
                   ),
                 ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ],
+      ),
+    ),
+  );
 
-  void _openNewsArticle(String? url) async {
-    if (url != null) {
-      await launchUrl(Uri.parse(url));
-      print('Opening: $url');
-    }
+  Widget _newsFallback() => Container(
+    color: AppColors.mutedSurface,
+    child: const Icon(
+      Icons.newspaper_outlined,
+      size: 36,
+      color: AppColors.secondary,
+    ),
+  );
+  Widget _empty(String message, IconData icon) => Container(
+    height: 126,
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      border: Border.all(color: AppColors.border),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.mutedSurface,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.secondary),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            message,
+            style: _text(14, FontWeight.w600, AppColors.primaryText),
+          ),
+        ),
+      ],
+    ),
+  );
+  List<ScheduleDatum> _today(List<ScheduleDatum> items, DateTime date) => items
+      .where(
+        (item) =>
+            item.startTime != null && DateUtils.isSameDay(item.startTime, date),
+      )
+      .toList();
+  String _greeting(DateTime now) => now.hour < 12
+      ? 'Good morning'
+      : now.hour < 17
+      ? 'Good afternoon'
+      : 'Good evening';
+  Color _priority(String? value) => switch (value?.toLowerCase()) {
+    'high' => AppColors.error,
+    'medium' => AppColors.accent,
+    'low' => AppColors.success,
+    _ => AppColors.secondary,
+  };
+  TextStyle _text(double size, FontWeight weight, Color color) =>
+      AppTextStyle().textInter(size: size, weight: weight, color: color);
+  Future<void> _openArticle(String? url) async {
+    if (url != null)
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 }
 
-class NewsArticle {
-  final String title;
-  final String source;
-  final String? imageUrl;
-  final String? url;
+class _ActivitiesShimmer extends StatelessWidget {
+  const _ActivitiesShimmer();
+  @override
+  Widget build(BuildContext context) => AppShimmer(
+    child: SizedBox(
+      height: 164,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 2,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (_, _) =>
+            const ShimmerBox(height: 164, width: 244, borderRadius: 8),
+      ),
+    ),
+  );
+}
 
-  NewsArticle({
+class NewsArticle {
+  const NewsArticle({
     required this.title,
     required this.source,
     this.imageUrl,
     this.url,
   });
-
-  factory NewsArticle.fromJson(Map<String, dynamic> json) {
-    return NewsArticle(
-      title: json['title'] ?? 'No title',
-      source: json['source']?['name'] ?? 'Unknown source',
-      imageUrl: json['urlToImage'],
-      url: json['url'],
-    );
-  }
+  final String title;
+  final String source;
+  final String? imageUrl;
+  final String? url;
+  factory NewsArticle.fromJson(Map<String, dynamic> json) => NewsArticle(
+    title: json['title'] as String? ?? 'No title',
+    source:
+        (json['source'] as Map<String, dynamic>?)?['name'] as String? ??
+        'Unknown source',
+    imageUrl: json['urlToImage'] as String?,
+    url: json['url'] as String?,
+  );
 }

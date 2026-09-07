@@ -1,4 +1,5 @@
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/profile/controller/profile_controller.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
@@ -48,7 +49,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
       ),
       body: Obx(
         () => scheduleCats.loadingCats.value
-            ? Center(child: CircularProgressIndicator(color: AppColors.blue))
+            ? const AppPageShimmer()
             : SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(18.0),
@@ -71,7 +72,9 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                         ),
                         padding: EdgeInsets.all(10),
                         child: TextFormField(
+                          keyboardType: TextInputType.multiline,
                           controller: descriptionController,
+                          maxLines: null,
                           decoration: InputDecoration(
                             hintText: 'Description',
                             border: InputBorder.none,
@@ -178,7 +181,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                 Get.snackbar(
                                   'Error',
                                   'Please enter a title',
-                                  backgroundColor: AppColors.blue,
+                                  backgroundColor: AppColors.secondary,
                                   colorText: AppColors.whiteColor,
                                 );
                                 return;
@@ -211,7 +214,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                   isTask
                                       ? 'Activity created! Now assign to members.'
                                       : 'Activity created! Now set the start and end time.',
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: AppColors.success,
                                   colorText: Colors.white,
                                 );
                               } else {
@@ -229,6 +232,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                         // Show time pickers only for NON-TASK categories (i.e., meetings)
                         if (!isTask) ...[
                           SizedBox(height: 20),
+                          // Replace the Start DateTime picker section with this:
                           Text(
                             'Start',
                             style: AppTextStyle().textInter(
@@ -239,54 +243,42 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                           SizedBox(height: 8),
                           InkWell(
                             onTap: () async {
-                              DateTime temp =
-                                  selectedStartDateTime ?? DateTime.now();
-                              final DateTime? picked =
-                                  await showCupertinoModalPopup<DateTime>(
-                                    context: context,
-                                    builder: (ctx) => Container(
-                                      height: 300,
-                                      color: Colors.white,
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            height: 220,
-                                            child: CupertinoDatePicker(
-                                              mode: CupertinoDatePickerMode
-                                                  .dateAndTime,
-                                              initialDateTime:
-                                                  selectedStartDateTime ??
-                                                  DateTime.now(),
-                                              use24hFormat: false,
-                                              onDateTimeChanged: (val) =>
-                                                  temp = val,
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              CupertinoButton(
-                                                child: Text('Cancel'),
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(),
-                                              ),
-                                              CupertinoButton(
-                                                child: Text('Done'),
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(temp),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                              // Pick date first
+                              final DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate:
+                                    selectedStartDateTime ?? DateTime.now(),
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime(2100),
+                              );
+
+                              if (pickedDate != null) {
+                                // Then pick time
+                                final TimeOfDay? pickedTime =
+                                    await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay.fromDateTime(
+                                        selectedStartDateTime ?? DateTime.now(),
                                       ),
-                                    ),
+                                    );
+
+                                if (pickedTime != null) {
+                                  final DateTime newStartDateTime = DateTime(
+                                    pickedDate.year,
+                                    pickedDate.month,
+                                    pickedDate.day,
+                                    pickedTime.hour,
+                                    pickedTime.minute,
                                   );
 
-                              if (picked != null) {
-                                setState(() {
-                                  selectedStartDateTime = picked;
-                                });
+                                  setState(() {
+                                    selectedStartDateTime = newStartDateTime;
+                                    // Automatically set end time to 1 hour after start time
+                                    selectedEndDateTime = newStartDateTime.add(
+                                      Duration(hours: 1),
+                                    );
+                                  });
+                                }
                               }
                             },
                             child: Container(
@@ -304,19 +296,35 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                 color: AppColors.whiteColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(
-                                selectedStartDateTime != null
-                                    ? selectedStartDateTime!
-                                          .toLocal()
-                                          .toString()
-                                          .split('.')
-                                          .first
-                                    : 'Select start date & time',
-                                style: AppTextStyle().textInter(size: 14),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 18,
+                                    color: AppColors.textColor.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      selectedStartDateTime != null
+                                          ? selectedStartDateTime!
+                                                .toLocal()
+                                                .toString()
+                                                .split('.')
+                                                .first
+                                          : 'Select start date & time',
+                                      style: AppTextStyle().textInter(size: 14),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                           SizedBox(height: 20),
+
+                          // Replace the End DateTime picker section with this:
                           Text(
                             'End',
                             style: AppTextStyle().textInter(
@@ -327,54 +335,47 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                           SizedBox(height: 8),
                           InkWell(
                             onTap: () async {
-                              DateTime temp =
-                                  selectedEndDateTime ?? DateTime.now();
-                              final DateTime? picked =
-                                  await showCupertinoModalPopup<DateTime>(
-                                    context: context,
-                                    builder: (ctx) => Container(
-                                      height: 300,
-                                      color: Colors.white,
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            height: 220,
-                                            child: CupertinoDatePicker(
-                                              mode: CupertinoDatePickerMode
-                                                  .dateAndTime,
-                                              initialDateTime:
-                                                  selectedEndDateTime ??
-                                                  DateTime.now(),
-                                              use24hFormat: false,
-                                              onDateTimeChanged: (val) =>
-                                                  temp = val,
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              CupertinoButton(
-                                                child: Text('Cancel'),
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(),
-                                              ),
-                                              CupertinoButton(
-                                                child: Text('Done'),
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(temp),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                              // Pick date first
+                              final DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate:
+                                    selectedEndDateTime ??
+                                    selectedStartDateTime?.add(
+                                      Duration(hours: 1),
+                                    ) ??
+                                    DateTime.now(),
+                                firstDate:
+                                    selectedStartDateTime ?? DateTime.now(),
+                                lastDate: DateTime(2100),
+                              );
+
+                              if (pickedDate != null) {
+                                // Then pick time
+                                final TimeOfDay? pickedTime =
+                                    await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay.fromDateTime(
+                                        selectedEndDateTime ??
+                                            selectedStartDateTime?.add(
+                                              Duration(hours: 1),
+                                            ) ??
+                                            DateTime.now(),
                                       ),
-                                    ),
+                                    );
+
+                                if (pickedTime != null) {
+                                  final DateTime newEndDateTime = DateTime(
+                                    pickedDate.year,
+                                    pickedDate.month,
+                                    pickedDate.day,
+                                    pickedTime.hour,
+                                    pickedTime.minute,
                                   );
 
-                              if (picked != null) {
-                                setState(() {
-                                  selectedEndDateTime = picked;
-                                });
+                                  setState(() {
+                                    selectedEndDateTime = newEndDateTime;
+                                  });
+                                }
                               }
                             },
                             child: Container(
@@ -392,18 +393,33 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                 color: AppColors.whiteColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(
-                                selectedEndDateTime != null
-                                    ? selectedEndDateTime!
-                                          .toLocal()
-                                          .toString()
-                                          .split('.')
-                                          .first
-                                    : 'Select end date & time',
-                                style: AppTextStyle().textInter(size: 14),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 18,
+                                    color: AppColors.textColor.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      selectedEndDateTime != null
+                                          ? selectedEndDateTime!
+                                                .toLocal()
+                                                .toString()
+                                                .split('.')
+                                                .first
+                                          : 'Select end date & time',
+                                      style: AppTextStyle().textInter(size: 14),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
+                          SizedBox(height: 20),
                           SizedBox(height: 20),
                         ],
 
@@ -455,9 +471,6 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                   );
                                   return;
                                 }
-
-                                // Step 1: Create activity instance with default times
-                                // Using current time as start and 1 hour later as end for tasks
                                 final now = DateTime.now();
                                 final oneHourLater = now.add(
                                   Duration(hours: 1),
@@ -504,7 +517,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                   Get.snackbar(
                                     'Success',
                                     'Task created and assigned successfully!',
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: AppColors.success,
                                     colorText: Colors.white,
                                   );
                                   Navigator.pop(context);
@@ -551,7 +564,7 @@ class _CreateSchdeuleScreenState extends State<CreateSchdeuleScreen> {
                                   Get.snackbar(
                                     'Success',
                                     'Activity instance created successfully!',
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: AppColors.success,
                                     colorText: Colors.white,
                                   );
                                   Navigator.pop(context);
@@ -662,7 +675,7 @@ class _MembersWidgetState extends State<MembersWidget> {
       Get.snackbar(
         'Error',
         'Please enter an email address',
-        backgroundColor: Colors.red.withOpacity(0.2),
+        backgroundColor: AppColors.error.withOpacity(0.2),
         colorText: Colors.black,
       );
       return;
@@ -702,7 +715,7 @@ class _MembersWidgetState extends State<MembersWidget> {
       Get.snackbar(
         'Success',
         '$addedCount email(s) added',
-        backgroundColor: Colors.green.withOpacity(0.2),
+        backgroundColor: AppColors.success.withOpacity(0.2),
         colorText: Colors.black,
         duration: Duration(seconds: 2),
       );
@@ -712,7 +725,7 @@ class _MembersWidgetState extends State<MembersWidget> {
       Get.snackbar(
         'Warning',
         '$invalidCount invalid email(s) skipped',
-        backgroundColor: Colors.orange.withOpacity(0.2),
+        backgroundColor: AppColors.accent.withOpacity(0.2),
         colorText: Colors.black,
         duration: Duration(seconds: 2),
       );
@@ -722,7 +735,7 @@ class _MembersWidgetState extends State<MembersWidget> {
       Get.snackbar(
         'Info',
         '$duplicateCount duplicate email(s) skipped',
-        backgroundColor: Colors.blue.withOpacity(0.2),
+        backgroundColor: AppColors.secondary.withOpacity(0.2),
         colorText: Colors.black,
         duration: Duration(seconds: 2),
       );
@@ -771,10 +784,10 @@ class _MembersWidgetState extends State<MembersWidget> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.blue.withValues(alpha: 0.05),
+                  color: AppColors.secondary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.blue.withValues(alpha: 0.3),
+                    color: AppColors.secondary.withValues(alpha: 0.3),
                   ),
                 ),
                 padding: EdgeInsets.all(12),
@@ -786,7 +799,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                         Icon(
                           Icons.email_outlined,
                           size: 20,
-                          color: AppColors.blue,
+                          color: AppColors.secondary,
                         ),
                         SizedBox(width: 8),
                         Text(
@@ -794,7 +807,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                           style: AppTextStyle().textInter(
                             size: 15,
                             weight: FontWeight.w600,
-                            color: AppColors.blue,
+                            color: AppColors.secondary,
                           ),
                         ),
                       ],
@@ -830,7 +843,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide(
-                                  color: AppColors.blue,
+                                  color: AppColors.secondary,
                                   width: 2,
                                 ),
                               ),
@@ -846,7 +859,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                         ElevatedButton(
                           onPressed: _addManualEmail,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.blue,
+                            backgroundColor: AppColors.secondary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -878,7 +891,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.blue,
+                              color: AppColors.secondary,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -952,7 +965,7 @@ class _MembersWidgetState extends State<MembersWidget> {
           Expanded(
             child: Obx(
               () => _profileController.loadingAllUsers.value
-                  ? Center(child: CircularProgressIndicator())
+                  ? const AppPageShimmer()
                   : _profileController.loadedUsers.value.data == null ||
                         _profileController.loadedUsers.value.data!.isEmpty
                   ? Center(
@@ -979,12 +992,12 @@ class _MembersWidgetState extends State<MembersWidget> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.blue.withValues(alpha: 0.1)
+                                ? AppColors.secondary.withValues(alpha: 0.1)
                                 : AppColors.whiteColor,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.blue
+                                  ? AppColors.secondary
                                   : AppColors.textColor.withValues(alpha: 0.2),
                             ),
                           ),
@@ -1025,7 +1038,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                                 ),
                               ),
                             ),
-                            activeColor: AppColors.blue,
+                            activeColor: AppColors.secondary,
                           ),
                         );
                       },
@@ -1053,7 +1066,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: AppColors.blue),
+                      side: BorderSide(color: AppColors.secondary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1062,7 +1075,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                       'Cancel',
                       style: AppTextStyle().textInter(
                         size: 16,
-                        color: AppColors.blue,
+                        color: AppColors.secondary,
                         weight: FontWeight.w600,
                       ),
                     ),
@@ -1083,7 +1096,7 @@ class _MembersWidgetState extends State<MembersWidget> {
                         Get.snackbar(
                           'Success',
                           '${tempSelectedUserIds.length} member(s) assigned',
-                          backgroundColor: Colors.green.withOpacity(0.2),
+                          backgroundColor: AppColors.success.withOpacity(0.2),
                           colorText: Colors.black,
                         );
                       } else {
@@ -1099,13 +1112,13 @@ class _MembersWidgetState extends State<MembersWidget> {
                         Get.snackbar(
                           'Success',
                           '$totalEmails email(s) selected',
-                          backgroundColor: Colors.green.withOpacity(0.2),
+                          backgroundColor: AppColors.success.withOpacity(0.2),
                           colorText: Colors.black,
                         );
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
+                      backgroundColor: AppColors.secondary,
                       padding: EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

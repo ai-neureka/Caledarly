@@ -1,12 +1,10 @@
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
-import 'package:apc_schedular/features/schedules/model/all_activity_instances_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 import 'package:intl/intl.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class TaskOverviewScreen extends StatefulWidget {
   const TaskOverviewScreen({super.key});
@@ -27,10 +25,10 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff8f9fb),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         title: const Text(
           "Task Overview",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
@@ -70,25 +68,18 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
 
   Widget _buildProgressOverview() {
     return Obx(() {
-      if (_controller.loadingAllActivities.value) {
+      if (_controller.fetchingTasks.value) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xff7F7FD5), Color(0xff86A8E7), Color(0xff91EAE4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blueAccent.withOpacity(0.2),
-                blurRadius: 10,
-              ),
-            ],
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [AppColors.softShadow],
           ),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          child: const SizedBox(
+            height: 76,
+            child: AppPageShimmer(itemCount: 1),
           ),
         );
       }
@@ -96,18 +87,9 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xff7F7FD5), Color(0xff86A8E7), Color(0xff91EAE4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blueAccent.withOpacity(0.2),
-              blurRadius: 10,
-            ),
-          ],
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [AppColors.softShadow],
         ),
         child: Row(
           children: [
@@ -155,7 +137,7 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
   Widget _buildAllTasksList() {
     return Obx(() {
       if (_controller.fetchingTasks.value) {
-        return const Center(child: CircularProgressIndicator());
+        return const AppPageShimmer();
       }
 
       if (_controller.loadedTasks.value.data!.isEmpty) {
@@ -200,27 +182,32 @@ class _TaskOverviewScreenState extends State<TaskOverviewScreen> {
           }
 
           return Card(
+            color: AppColors.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.border),
             ),
-            elevation: 3,
+            elevation: 0,
             margin: const EdgeInsets.symmetric(vertical: 8),
             child: ListTile(
               leading: CircleAvatar(
-                child: Icon(Icons.flag, color: AppColors.blue),
+                backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
+                child: Icon(Icons.flag, color: AppColors.secondary),
               ),
               title: Text(
                 task.notes ?? 'Untitled Task',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
-                'Assigned to you by:${task.assignedBy?.username}' ??
-                    'Untitled Task',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                'Assigned by ${task.assignedBy?.username ?? 'Unknown'}${timeDisplay.isNotEmpty ? ' • $timeDisplay' : ''}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.secondaryText,
+                ),
               ),
               trailing: Icon(
                 isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                color: isDone ? Colors.green : Colors.grey,
+                color: isDone ? AppColors.success : AppColors.secondaryText,
               ),
             ),
           ).animate().fadeIn(delay: (index * 100).ms);

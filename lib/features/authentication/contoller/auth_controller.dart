@@ -1,19 +1,26 @@
-import 'dart:convert';
-
 import 'package:apc_schedular/constants/api.dart';
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/constants/app_feedback.dart';
 import 'package:apc_schedular/constants/http_service.dart';
 import 'package:apc_schedular/features/dashboard/dashboard_screen.dart';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthController extends GetxController {
+  static bool isValidPassword(String password) {
+    return password.length > 6 &&
+        RegExp(r'[A-Za-z]').hasMatch(password) &&
+        RegExp(r'[0-9]').hasMatch(password);
+  }
+
   //REPO
   Future createUser(username, email, password) async {
     final response = await BaseHttpClient.instance.post(
       ApiRoutes.register,
       body: {"username": username, "email": email, "password": password},
+      includeAuth: false,
     );
     return response;
   }
@@ -22,6 +29,7 @@ class AuthController extends GetxController {
     final response = await BaseHttpClient().post(
       ApiRoutes.login,
       body: {"email": email, "password": password},
+      includeAuth: false,
     );
     return response;
   }
@@ -43,7 +51,39 @@ class AuthController extends GetxController {
   RxBool newPasswordVisible = RxBool(false);
   RxBool resttingPassword = RxBool(false);
 
+  String _authErrorMessage(Object error) {
+    if (error is ApiException) {
+      final data = error.data;
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+      return error.message;
+    }
+
+    return 'Something went wrong. Please try again.';
+  }
+
+  void _showAuthSnackbar({
+    required String title,
+    required String message,
+    required Color backgroundColor,
+  }) {
+    showAppSnackBar(
+      title: title,
+      message: message,
+      backgroundColor: backgroundColor,
+    );
+  }
+
   Future createUserController(username, email, password) async {
+    if (!isValidPassword(password.toString())) {
+      _showAuthSnackbar(
+        title: 'Invalid password',
+        message: 'Use at least 7 characters with both letters and numbers.',
+        backgroundColor: AppColors.error,
+      );
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     try {
       registering(true);
@@ -51,16 +91,14 @@ class AuthController extends GetxController {
       registering(false);
       final token = result['data']['token'];
       await prefs.setString('token', token);
-      Get.offAll(() => DashboardScreen());
+      Get.offAll(() => const DashboardScreen());
     } catch (e) {
       registering(false);
       print(e);
-      Get.snackbar(
-        'OPPSS',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.blue,
-        colorText: AppColors.whiteColor,
+      _showAuthSnackbar(
+        title: 'Sign up failed',
+        message: _authErrorMessage(e),
+        backgroundColor: AppColors.error,
       );
     }
   }
@@ -73,14 +111,13 @@ class AuthController extends GetxController {
       loading(false);
       final token = result['data']['token'];
       await prefs.setString('token', token);
-      Get.offAll(() => DashboardScreen());
+      Get.offAll(() => const DashboardScreen());
     } catch (e) {
       loading(false);
-      Get.snackbar(
-        'OPPSS',
-        e.toString(),
+      _showAuthSnackbar(
+        title: 'Login failed',
+        message: _authErrorMessage(e),
         backgroundColor: AppColors.redColor,
-        colorText: AppColors.whiteColor,
       );
     }
   }
@@ -88,22 +125,20 @@ class AuthController extends GetxController {
   Future changePasswordController(oldPassword, newPassword) async {
     try {
       resttingPassword(true);
-      var result = await changePasswordRepo(oldPassword, newPassword);
+      await changePasswordRepo(oldPassword, newPassword);
       resttingPassword(false);
-      Get.snackbar(
-        'SUCCESS',
-        'Password changed successfully!',
+      _showAuthSnackbar(
+        title: 'Success',
+        message: 'Password changed successfully!',
         backgroundColor: AppColors.blue,
-        colorText: AppColors.whiteColor,
       );
-      Get.off(() => DashboardScreen());
+      Get.off(() => const DashboardScreen());
     } catch (e) {
       resttingPassword(false);
-      Get.snackbar(
-        'OPPSS',
-        e.toString(),
+      _showAuthSnackbar(
+        title: 'Password reset failed',
+        message: _authErrorMessage(e),
         backgroundColor: AppColors.redColor,
-        colorText: AppColors.whiteColor,
       );
     }
   }

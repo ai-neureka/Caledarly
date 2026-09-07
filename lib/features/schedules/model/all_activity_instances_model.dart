@@ -22,7 +22,9 @@ class AllActivityInstancesModel {
         success: json["success"],
         data: json["data"] == null
             ? []
-            : List<ScheduleDatum>.from(json["data"]!.map((x) => ScheduleDatum.fromJson(x))),
+            : List<ScheduleDatum>.from(
+                json["data"]!.map((x) => ScheduleDatum.fromJson(x)),
+              ),
         pagination: json["pagination"] == null
             ? null
             : Pagination.fromJson(json["pagination"]),

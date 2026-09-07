@@ -1,4 +1,5 @@
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
 import 'package:apc_schedular/features/schedules/presentation/create_schdeule_screen.dart';
@@ -226,12 +227,14 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
                         );
                       },
                       child: _activityController.createActivityInstance.value
-                          ? Center(
-                              child: SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: AppColors.whiteColor,
+                          ? const Center(
+                              child: AppShimmer(
+                                baseColor: Colors.white24,
+                                child: ShimmerBox(
+                                  height: 18,
+                                  width: 64,
+                                  borderRadius: 4,
+                                  color: Colors.white24,
                                 ),
                               ),
                             )
@@ -273,7 +276,7 @@ class _ReoccuringScheduleScreenState extends State<ReoccuringScheduleScreen> {
       backgroundColor: AppColors.whiteColor,
       body: Obx(
         () => _activityController.loadingReoccuring.value
-            ? Center(child: CircularProgressIndicator(color: AppColors.blue))
+            ? const AppPageShimmer()
             : Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

@@ -24,151 +24,160 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.whiteColor,
-      body: SafeArea(
-        child: Form(
-          key: _loginKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 200,
-                width: MediaQuery.of(context).size.width,
-                decoration: BoxDecoration(
-                  color: AppColors.blue,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(50),
-                    bottomRight: Radius.circular(50),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    'Sign in with Apc schedular',
-                    style: AppTextStyle().textInter(
-                      size: 20,
-                      weight: FontWeight.w800,
-                      color: AppColors.whiteColor,
+      backgroundColor: AppColors.background,
+      body: SingleChildScrollView(
+        child: SafeArea(
+          child: Form(
+            key: _loginKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 200,
+                  width: MediaQuery.of(context).size.width,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(28),
+                      bottomRight: Radius.circular(28),
                     ),
                   ),
+                  child: Center(
+                    child: Text(
+                      'APC Scheduler',
+                      style: AppTextStyle().textInter(
+                        size: 20,
+                        weight: FontWeight.w800,
+                        color: AppColors.whiteColor,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              SizedBox(height: 30),
-              Padding(
-                padding: const EdgeInsets.all(17.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome Back!',
-                      style: AppTextStyle().textInter(
-                        size: 27,
-                        color: AppColors.blackColor,
-                        weight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 60),
-                    Text(
-                      'Email',
-                      style: AppTextStyle().textInter(
-                        size: 14,
-                        weight: FontWeight.w400,
-                        color: AppColors.textColor,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    CustomTextField(
-                      prefixIcon: Icon(EvaIcons.email),
-                      suffixIcon: SizedBox.shrink(),
-                      hintText: 'Enter Email',
-                      isVisible: false,
-
-                      onPressed: () {},
-                      controller: _emailController,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Password',
-                      style: AppTextStyle().textInter(
-                        size: 14,
-                        weight: FontWeight.w400,
-                        color: AppColors.textColor,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Obx(
-                      () => CustomTextField(
-                        prefixIcon: Icon(EvaIcons.lock),
-                        suffixIcon: !_authController.isVisible.value
-                            ? Icon(Icons.visibility_off)
-                            : Icon(Icons.visibility),
-                        hintText: 'Enter Password',
-                        isVisible: !_authController.isVisible.value,
-
-                        onPressed: () {
-                          _authController.isVisible.value =
-                              !_authController.isVisible.value;
-                        },
-                        controller: _passwordController,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Text(
-                        'Forgot Password?',
+                SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.all(17.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome back',
                         style: AppTextStyle().textInter(
-                          size: 12,
-                          color: AppColors.blackColor,
-                          weight: FontWeight.w500,
+                          size: 27,
+                          color: AppColors.primaryText,
+                          weight: FontWeight.w800,
                         ),
                       ),
-                    ),
-                    SizedBox(height: 32),
-                    Obx(
-                      () => CustomButtonWidget(
-                        btnText: 'Login',
-                        isLoading: _authController.loading.value,
-                        onPressed: () {
-                          if (_loginKey.currentState!.validate()) {
-                            _authController.loginUserController(
-                              _emailController.text,
-                              _passwordController.text,
-                            );
-                          }
-                        },
+                      Text(
+                        'Sign in to coordinate schedules, tasks, and community work.',
+                        style: AppTextStyle().textInter(
+                          size: 15,
+                          color: AppColors.secondaryText,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account?",
+                      SizedBox(height: 32),
+                      Text(
+                        'Email',
+                        style: AppTextStyle().textInter(
+                          size: 14,
+                          weight: FontWeight.w400,
+                          color: AppColors.textColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      CustomTextField(
+                        prefixIcon: Icon(EvaIcons.email),
+                        suffixIcon: SizedBox.shrink(),
+                        hintText: 'Enter Email',
+                        isVisible: false,
+
+                        onPressed: () {},
+                        controller: _emailController,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Password',
+                        style: AppTextStyle().textInter(
+                          size: 14,
+                          weight: FontWeight.w400,
+                          color: AppColors.textColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Obx(
+                        () => CustomTextField(
+                          prefixIcon: Icon(EvaIcons.lock),
+                          suffixIcon: !_authController.isVisible.value
+                              ? Icon(Icons.visibility_off)
+                              : Icon(Icons.visibility),
+                          hintText: 'Enter Password',
+                          isVisible: !_authController.isVisible.value,
+
+                          onPressed: () {
+                            _authController.isVisible.value =
+                                !_authController.isVisible.value;
+                          },
+                          controller: _passwordController,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Text(
+                          'Forgot Password?',
                           style: AppTextStyle().textInter(
-                            size: 14,
-                            weight: FontWeight.w400,
-                            color: AppColors.blackColor,
+                            size: 12,
+                            color: AppColors.secondary,
+                            weight: FontWeight.w500,
                           ),
                         ),
-                        TextButton(
+                      ),
+                      SizedBox(height: 32),
+                      Obx(
+                        () => CustomButtonWidget(
+                          btnText: 'Login',
+                          isLoading: _authController.loading.value,
                           onPressed: () {
-                            Get.to(() => RegistersScreen());
+                            if (_loginKey.currentState!.validate()) {
+                              _authController.loginUserController(
+                                _emailController.text,
+                                _passwordController.text,
+                              );
+                            }
                           },
-                          child: Text(
-                            'Sign Up',
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Don't have an account?",
                             style: AppTextStyle().textInter(
                               size: 14,
-                              weight: FontWeight.w500,
+                              weight: FontWeight.w400,
                               color: AppColors.blackColor,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          TextButton(
+                            onPressed: () {
+                              Get.to(() => RegistersScreen());
+                            },
+                            child: Text(
+                              'Sign Up',
+                              style: AppTextStyle().textInter(
+                                size: 14,
+                                weight: FontWeight.w500,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

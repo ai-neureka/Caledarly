@@ -1,4 +1,5 @@
 import 'package:apc_schedular/constants/app_colors.dart';
+import 'package:apc_schedular/features/widget/app_shimmer.dart';
 import 'package:apc_schedular/constants/app_style.dart';
 import 'package:apc_schedular/features/dashboard/reoccuring_schedule_screen.dart';
 import 'package:apc_schedular/features/schedules/controller/schedules_controller.dart';
@@ -26,10 +27,23 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   final List<String> _views = ['Day', 'Week', 'Month', 'Year'];
 
+  // Meeting category ID constant
+  static const String MEETING_CATEGORY_ID = "68fb9f9fdc27b4a6a649a87d";
+
   @override
   void initState() {
     super.initState();
     _controller.getAllUserActivitiesController();
+  }
+
+  // Helper method to check if activity is a meeting
+  bool _isMeeting(ScheduleDatum activity) {
+    return activity.activityId?.categoryId == MEETING_CATEGORY_ID;
+  }
+
+  // Helper method to get only meetings from activities list
+  List<ScheduleDatum> _getOnlyMeetings(List<ScheduleDatum> activities) {
+    return activities.where((activity) => _isMeeting(activity)).toList();
   }
 
   // Helper method to check if a datetime is in the past
@@ -52,7 +66,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.blue,
+        backgroundColor: AppColors.secondary,
         child: Icon(Icons.add, color: AppColors.whiteColor),
         onPressed: () {
           showModalBottomSheet(
@@ -81,12 +95,15 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.blue,
+                        color: AppColors.secondary,
                       ),
                     ),
                     const SizedBox(height: 15),
                     ListTile(
-                      leading: const Icon(Icons.repeat, color: Colors.blue),
+                      leading: const Icon(
+                        Icons.repeat,
+                        color: AppColors.secondary,
+                      ),
                       title: const Text("Recurring"),
                       onTap: () {
                         Navigator.pop(context);
@@ -96,7 +113,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                     ListTile(
                       leading: const Icon(
                         Icons.add_circle_outline,
-                        color: Colors.green,
+                        color: AppColors.success,
                       ),
                       title: const Text("New"),
                       onTap: () {
@@ -144,7 +161,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         curve: Curves.easeInOut,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: isActive ? AppColors.blue : Colors.transparent,
+                          color: isActive
+                              ? AppColors.secondary
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
@@ -236,12 +255,12 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
             width: 45,
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.blue : Colors.transparent,
+              color: isSelected ? AppColors.secondary : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.blue.withOpacity(0.3),
+                        color: AppColors.secondary.withOpacity(0.3),
                         blurRadius: 6,
                       ),
                     ]
@@ -268,7 +287,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         color: isSelected
                             ? Colors.white
                             : (isToday
-                                  ? Colors.blue
+                                  ? AppColors.secondary
                                   : (isPast ? Colors.grey[400] : Colors.black)),
                       ),
                     ),
@@ -279,7 +298,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                           width: 4,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: AppColors.blue,
+                            color: AppColors.secondary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -311,7 +330,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
             if (schedulesOnDay.length == 1) {
               Get.to(
                 () => ScheduleDetailScreen(
-                  id: schedulesOnDay[0].activityId!.id ?? '',
+                  id: schedulesOnDay[0].id ?? '',
                   title: schedulesOnDay[0].activityId?.title ?? '',
                 ),
               );
@@ -324,7 +343,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
               'Cannot Create Schedule',
               'You cannot create schedules for past dates',
               snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.red.withOpacity(0.8),
+              backgroundColor: AppColors.error.withOpacity(0.8),
               colorText: Colors.white,
               duration: const Duration(seconds: 2),
             );
@@ -338,7 +357,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
           if (schedulesOnDay.length == 1) {
             Get.to(
               () => ScheduleDetailScreen(
-                id: schedulesOnDay[0].activityId!.id ?? '',
+                id: schedulesOnDay[0].id ?? '',
                 title: schedulesOnDay[0].activityId?.title ?? '',
               ),
             );
@@ -376,11 +395,11 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
       ),
       calendarStyle: CalendarStyle(
         todayDecoration: BoxDecoration(
-          color: AppColors.blue.withOpacity(0.5),
+          color: AppColors.secondary.withOpacity(0.5),
           shape: BoxShape.circle,
         ),
         selectedDecoration: const BoxDecoration(
-          color: AppColors.blue,
+          color: AppColors.secondary,
           shape: BoxShape.circle,
         ),
         // Disable past dates visually
@@ -398,8 +417,10 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.blue
-            : (isToday ? AppColors.blue.withOpacity(0.5) : Colors.transparent),
+            ? AppColors.secondary
+            : (isToday
+                  ? AppColors.secondary.withOpacity(0.5)
+                  : Colors.transparent),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -417,7 +438,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
               width: 4,
               height: 4,
               decoration: BoxDecoration(
-                color: isSelected || isToday ? Colors.white : AppColors.blue,
+                color: isSelected || isToday
+                    ? Colors.white
+                    : AppColors.secondary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -460,7 +483,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                     'Cannot Create Schedule',
                     'You cannot create schedules for past months',
                     snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.red.withOpacity(0.8),
+                    backgroundColor: AppColors.error.withOpacity(0.8),
                     colorText: Colors.white,
                     duration: const Duration(seconds: 2),
                   );
@@ -486,7 +509,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
               width: MediaQuery.of(context).size.width / 3.6,
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.blue : Colors.white,
+                color: isSelected ? AppColors.secondary : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -516,7 +539,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: AppColors.blue,
+                          color: AppColors.secondary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -533,7 +556,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
   Widget _buildDayTimelineView() {
     return Obx(() {
       if (_controller.loadingAllActivities.value) {
-        return const Center(child: CircularProgressIndicator());
+        return const AppPageShimmer();
       }
 
       final schedulesForDay = _getSchedulesForDate(_selectedDate);
@@ -544,7 +567,6 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
       return ListView.builder(
         itemCount: 24,
         itemBuilder: (context, hour) {
-          
           final schedulesInHour = schedulesForDay.where((schedule) {
             if (schedule.startTime == null) return false;
             return schedule.startTime!.hour == hour;
@@ -581,7 +603,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                       'Cannot Create Schedule',
                       'You cannot create schedules for past times',
                       snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: Colors.red.withOpacity(0.8),
+                      backgroundColor: AppColors.error.withOpacity(0.8),
                       colorText: Colors.white,
                       duration: const Duration(seconds: 2),
                     );
@@ -636,7 +658,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                                 onTap: () {
                                   Get.to(
                                     () => ScheduleDetailScreen(
-                                      id: schedule.activityId?.id ?? '',
+                                      id: schedule.id ?? '',
                                       title: schedule.activityId!.title ?? '',
                                     ),
                                   );
@@ -648,7 +670,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                                   ),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: AppColors.blue.withOpacity(0.1),
+                                    color: AppColors.secondary.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border(
                                       left: BorderSide(
@@ -700,7 +722,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                                               ).format(schedule.startTime!),
                                               style: TextStyle(
                                                 fontSize: 11,
-                                                color: AppColors.blue,
+                                                color: AppColors.secondary,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -756,7 +778,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   bool _hasScheduleOnDate(DateTime date) {
     final activities = _controller.loadedActivities.value.data ?? [];
-    return activities.any((activity) {
+    // Filter to only meetings
+    final meetings = _getOnlyMeetings(activities);
+    return meetings.any((activity) {
       if (activity.createdAt == null) return false;
       return DateUtils.isSameDay(activity.createdAt!, date);
     });
@@ -764,7 +788,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   bool _hasScheduleInMonth(DateTime month) {
     final activities = _controller.loadedActivities.value.data ?? [];
-    return activities.any((activity) {
+    // Filter to only meetings
+    final meetings = _getOnlyMeetings(activities);
+    return meetings.any((activity) {
       if (activity.createdAt == null) return false;
       return activity.createdAt!.year == month.year &&
           activity.createdAt!.month == month.month;
@@ -773,7 +799,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   List<ScheduleDatum> _getSchedulesForDate(DateTime date) {
     final activities = _controller.loadedActivities.value.data ?? [];
-    return activities.where((activity) {
+    // Filter to only meetings
+    final meetings = _getOnlyMeetings(activities);
+    return meetings.where((activity) {
       if (activity.createdAt == null) return false;
       return DateUtils.isSameDay(activity.createdAt!, date);
     }).toList();
@@ -781,7 +809,9 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   List<ScheduleDatum> _getSchedulesForMonth(DateTime month) {
     final activities = _controller.loadedActivities.value.data ?? [];
-    return activities.where((activity) {
+    // Filter to only meetings
+    final meetings = _getOnlyMeetings(activities);
+    return meetings.where((activity) {
       if (activity.createdAt == null) return false;
       return activity.createdAt!.year == month.year &&
           activity.createdAt!.month == month.month;
@@ -874,7 +904,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         Navigator.pop(context);
                         Get.to(
                           () => ScheduleDetailScreen(
-                            id: schedule.activityId?.id ?? '',
+                            id: schedule.id ?? '',
                             title: schedule.activityId!.title ?? '',
                           ),
                         );
@@ -900,7 +930,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Create New Schedule'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
+                      backgroundColor: AppColors.secondary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -918,8 +948,10 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
 
   List<ScheduleDatum> _getFilteredActivities() {
     final activities = _controller.loadedActivities.value.data ?? [];
+    // Filter to only meetings first
+    final meetings = _getOnlyMeetings(activities);
 
-    return activities.where((activity) {
+    return meetings.where((activity) {
       if (activity.createdAt == null) return false;
 
       final createdDate = activity.createdAt!;
@@ -954,9 +986,15 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
   }
 
   Widget _buildScheduleList() {
+    // For Week view, show the new grid layout
+    if (_selectedView == 'Week') {
+      return _buildWeekGridView();
+    }
+
+    // For other views (Month, Year), keep the existing list view
     return Obx(() {
       if (_controller.loadingAllActivities.value) {
-        return const Center(child: CircularProgressIndicator());
+        return const AppPageShimmer();
       }
 
       final filteredActivities = _getFilteredActivities();
@@ -1010,7 +1048,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
             onTap: () {
               Get.to(
                 () => ScheduleDetailScreen(
-                  id: activity.activityId?.id ?? '',
+                  id: activity.id ?? '',
                   title: activity.activityId?.title ?? '',
                 ),
               );
@@ -1026,10 +1064,10 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                 leading: CircleAvatar(
                   backgroundColor: isPast
                       ? Colors.grey.withOpacity(0.2)
-                      : AppColors.blue.withOpacity(0.2),
+                      : AppColors.secondary.withOpacity(0.2),
                   child: Icon(
                     Icons.schedule,
-                    color: isPast ? Colors.grey : AppColors.blue,
+                    color: isPast ? Colors.grey : AppColors.secondary,
                   ),
                 ),
                 title: Text(
@@ -1056,7 +1094,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         DateFormat('hh:mm a').format(activity.startTime!),
                         style: TextStyle(
                           fontSize: 11,
-                          color: isPast ? Colors.grey : AppColors.blue,
+                          color: isPast ? Colors.grey : AppColors.secondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1066,7 +1104,7 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
                         'Passed Schedule',
                         style: AppTextStyle().textInter(
                           size: 12,
-                          color: AppColors.redColor.withValues(alpha: 0.2),
+                          color: AppColors.error.withValues(alpha: 0.2),
                           weight: FontWeight.w600,
                         ),
                       ),
@@ -1107,14 +1145,227 @@ class _ScheduleOverviewScreenState extends State<ScheduleOverviewScreen> {
     });
   }
 
+  Widget _buildWeekGridView() {
+    return Obx(() {
+      if (_controller.loadingAllActivities.value) {
+        return const AppPageShimmer();
+      }
+
+      final startOfWeek = _selectedDate.subtract(
+        Duration(days: _selectedDate.weekday - 1),
+      );
+      final days = List.generate(7, (i) => startOfWeek.add(Duration(days: i)));
+
+      // Define the hours you want to display (e.g., 12 AM to 11 PM or customize as needed)
+      final hours = List.generate(24, (i) => i);
+
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header with day names and dates
+            Row(
+              children: [
+                // Empty cell for time column
+                SizedBox(
+                  width: 60,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      '',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ),
+                // Day headers
+                ...days.map((day) {
+                  final isToday = DateUtils.isSameDay(day, DateTime.now());
+                  return Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            DateFormat('E').format(day),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isToday
+                                  ? AppColors.secondary
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            DateFormat('d').format(day),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isToday
+                                  ? AppColors.secondary
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+            // Grid with hours and schedule cells
+            ...hours.map((hour) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Time label
+                  SizedBox(
+                    width: 60,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        DateFormat('ha').format(DateTime(2000, 1, 1, hour)),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Schedule cells for each day
+                  ...days.map((day) {
+                    return _buildScheduleCell(day, hour);
+                  }).toList(),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildScheduleCell(DateTime day, int hour) {
+    final schedulesInHour = _getSchedulesForDateAndHour(day, hour);
+    final hasSchedule = schedulesInHour.isNotEmpty;
+
+    final cellDateTime = DateTime(day.year, day.month, day.day, hour);
+    final isPast = cellDateTime.isBefore(DateTime.now());
+    final isToday = DateUtils.isSameDay(day, DateTime.now());
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (hasSchedule) {
+            // If there are schedules, show the first one or a selection sheet if multiple
+            if (schedulesInHour.length == 1) {
+              Get.to(
+                () => ScheduleDetailScreen(
+                  id: schedulesInHour[0].id ?? '',
+                  title: schedulesInHour[0].activityId?.title ?? '',
+                ),
+              );
+            } else {
+              _showScheduleSelectionSheet(schedulesInHour);
+            }
+          } else if (!isPast) {
+            // If no schedule and not in the past, allow creating a new schedule
+            final preselectedDateTime = DateTime(
+              day.year,
+              day.month,
+              day.day,
+              hour,
+            );
+            Get.to(
+              () => ReoccuringScheduleScreen(),
+              arguments: {'preselectedDate': preselectedDateTime},
+            )?.then((_) {
+              _controller.getAllUserActivitiesController();
+            });
+          } else {
+            // Show message for past times
+            Get.snackbar(
+              'Cannot Create Schedule',
+              'You cannot create schedules for past times',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.error.withOpacity(0.8),
+              colorText: Colors.white,
+              duration: const Duration(seconds: 2),
+            );
+          }
+        },
+        child: Container(
+          height: 60,
+          margin: const EdgeInsets.all(1),
+          decoration: BoxDecoration(
+            color: hasSchedule
+                ? AppColors.secondary
+                : (isPast ? Colors.grey[200] : Colors.grey[100]),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey[300]!, width: 0.5),
+          ),
+          child: hasSchedule
+              ? Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        schedulesInHour[0].activityId?.title ?? 'Untitled',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (schedulesInHour.length > 1)
+                        Text(
+                          '+${schedulesInHour.length - 1} more',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  List<ScheduleDatum> _getSchedulesForDateAndHour(DateTime date, int hour) {
+    final activities = _controller.loadedActivities.value.data ?? [];
+    final meetings = _getOnlyMeetings(activities);
+
+    return meetings.where((activity) {
+      if (activity.startTime == null) return false;
+      return DateUtils.isSameDay(activity.startTime!, date) &&
+          activity.startTime!.hour == hour;
+    }).toList();
+  }
+
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'high':
-        return Colors.red;
+        return AppColors.error;
       case 'medium':
-        return Colors.orange;
+        return AppColors.accent;
       case 'low':
-        return Colors.green;
+        return AppColors.success;
       default:
         return Colors.grey;
     }

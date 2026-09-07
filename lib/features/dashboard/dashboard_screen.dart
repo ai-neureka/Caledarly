@@ -34,16 +34,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.blackColor,
-        unselectedItemColor: AppColors.textColor,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.secondaryText,
         onTap: _onItemTapped,
-        elevation: 10,
+        elevation: 0,
         showUnselectedLabels: true,
         selectedLabelStyle: AppTextStyle().textInter(
           size: 12,
